@@ -28,17 +28,18 @@ yargs(hideBin(process.argv))
 
   // gwt backup
   .command(
-    'backup',
-    `Snapshot all worktrees to ${BACKUP_FILE}`,
+    'backup [file]',
+    'Snapshot all worktrees to a backup file (default: ~/.gwt/backup.json)',
     (y) =>
-      y.option('root', {
+      y.positional('file', {
         type: 'string',
-        description: 'Override worktrees root',
+        description: 'Path to save the backup',
+        default: BACKUP_FILE,
       }),
     (argv) => {
       try {
-        const backup = saveBackup(argv.root ?? null);
-        console.log(`Backed up ${backup.entries.length} worktree${backup.entries.length !== 1 ? 's' : ''} to ${BACKUP_FILE}`);
+        const backup = saveBackup(argv.root ?? null, argv.file);
+        console.log(`Backed up ${backup.entries.length} worktree${backup.entries.length !== 1 ? 's' : ''} to ${argv.file}`);
         for (const e of backup.entries) {
           console.log(`  ${e.repo ? `${e.repo} / ` : ''}${e.name}  (${e.branch})`);
         }
@@ -51,10 +52,10 @@ yargs(hideBin(process.argv))
 
   // gwt restore
   .command(
-    'restore',
-    `Recreate missing worktrees from ${BACKUP_FILE}`,
+    'restore [file]',
+    'Recreate missing worktrees from a backup file (default: ~/.gwt/backup.json)',
     (y) =>
-      y.option('file', {
+      y.positional('file', {
         type: 'string',
         description: 'Path to backup file',
         default: BACKUP_FILE,

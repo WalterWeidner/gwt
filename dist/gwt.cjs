@@ -19650,7 +19650,7 @@ function resolveRepoRoot2(worktreePath) {
   const abs = (0, import_node_path4.resolve)(worktreePath, gitCommonDir);
   return abs.endsWith("/.git") ? abs.slice(0, -5) : abs;
 }
-function saveBackup(root = null) {
+function saveBackup(root = null, outputFile = BACKUP_FILE) {
   const worktrees = discoverWorktrees(root);
   const entries = worktrees.map((wt) => {
     let repoRoot = null;
@@ -19672,7 +19672,7 @@ function saveBackup(root = null) {
     worktreesRoot: root ?? process.env.GWT_WORKTREES_ROOT ?? (0, import_node_path4.join)((0, import_node_os4.homedir)(), "worktrees"),
     entries
   };
-  (0, import_node_fs3.writeFileSync)(BACKUP_FILE, JSON.stringify(backup, null, 2), "utf8");
+  (0, import_node_fs3.writeFileSync)(outputFile, JSON.stringify(backup, null, 2), "utf8");
   return backup;
 }
 function restoreBackup(backupFile = BACKUP_FILE) {
@@ -19749,16 +19749,17 @@ yargs_default(hideBin(process.argv)).scriptName("gwt").option("root", {
     });
   }
 ).command(
-  "backup",
-  `Snapshot all worktrees to ${BACKUP_FILE}`,
-  (y) => y.option("root", {
+  "backup [file]",
+  "Snapshot all worktrees to a backup file (default: ~/.gwt/backup.json)",
+  (y) => y.positional("file", {
     type: "string",
-    description: "Override worktrees root"
+    description: "Path to save the backup",
+    default: BACKUP_FILE
   }),
   (argv) => {
     try {
-      const backup = saveBackup(argv.root ?? null);
-      console.log(`Backed up ${backup.entries.length} worktree${backup.entries.length !== 1 ? "s" : ""} to ${BACKUP_FILE}`);
+      const backup = saveBackup(argv.root ?? null, argv.file);
+      console.log(`Backed up ${backup.entries.length} worktree${backup.entries.length !== 1 ? "s" : ""} to ${argv.file}`);
       for (const e of backup.entries) {
         console.log(`  ${e.repo ? `${e.repo} / ` : ""}${e.name}  (${e.branch})`);
       }
@@ -19768,9 +19769,9 @@ yargs_default(hideBin(process.argv)).scriptName("gwt").option("root", {
     }
   }
 ).command(
-  "restore",
-  `Recreate missing worktrees from ${BACKUP_FILE}`,
-  (y) => y.option("file", {
+  "restore [file]",
+  "Recreate missing worktrees from a backup file (default: ~/.gwt/backup.json)",
+  (y) => y.positional("file", {
     type: "string",
     description: "Path to backup file",
     default: BACKUP_FILE

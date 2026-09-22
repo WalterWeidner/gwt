@@ -21,7 +21,7 @@ function resolveRepoRoot(worktreePath) {
  * Snapshot all current worktrees to ~/.gwt/backup.json.
  * Returns the saved backup object.
  */
-export function saveBackup(root = null) {
+export function saveBackup(root = null, outputFile = BACKUP_FILE) {
   const worktrees = discoverWorktrees(root);
 
   const entries = worktrees.map((wt) => {
@@ -48,7 +48,7 @@ export function saveBackup(root = null) {
     entries,
   };
 
-  writeFileSync(BACKUP_FILE, JSON.stringify(backup, null, 2), 'utf8');
+  writeFileSync(outputFile, JSON.stringify(backup, null, 2), 'utf8');
   return backup;
 }
 
