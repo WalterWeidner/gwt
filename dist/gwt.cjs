@@ -7619,7 +7619,7 @@ var require_lib2 = __commonJS({
       return matches;
     };
     exports2.analyse = analyse;
-    var detectFile = (filepath, opts = {}) => new Promise((resolve6, reject) => {
+    var detectFile = (filepath, opts = {}) => new Promise((resolve7, reject) => {
       let fd;
       const fs = (0, node_1.default)();
       const handler = (err, buffer) => {
@@ -7629,7 +7629,7 @@ var require_lib2 = __commonJS({
         if (err) {
           reject(err);
         } else if (buffer) {
-          resolve6((0, exports2.detect)(buffer));
+          resolve7((0, exports2.detect)(buffer));
         } else {
           reject(new Error("No error and no buffer received"));
         }
@@ -12017,7 +12017,7 @@ var YargsParser = class {
     let error = null;
     checkConfiguration();
     let notFlags = [];
-    const argv2 = Object.assign(/* @__PURE__ */ Object.create(null), { _: [] });
+    const argv = Object.assign(/* @__PURE__ */ Object.create(null), { _: [] });
     const argvReturn = {};
     for (let i = 0; i < args.length; i++) {
       const arg = args[i];
@@ -12155,41 +12155,41 @@ var YargsParser = class {
         pushPositional(arg);
       }
     }
-    applyEnvVars(argv2, true);
-    applyEnvVars(argv2, false);
-    setConfig(argv2);
+    applyEnvVars(argv, true);
+    applyEnvVars(argv, false);
+    setConfig(argv);
     setConfigObjects();
-    applyDefaultsAndAliases(argv2, flags.aliases, defaults, true);
-    applyCoercions(argv2);
+    applyDefaultsAndAliases(argv, flags.aliases, defaults, true);
+    applyCoercions(argv);
     if (configuration["set-placeholder-key"])
-      setPlaceholderKeys(argv2);
+      setPlaceholderKeys(argv);
     Object.keys(flags.counts).forEach(function(key) {
-      if (!hasKey(argv2, key.split(".")))
+      if (!hasKey(argv, key.split(".")))
         setArg(key, 0);
     });
     if (notFlagsOption && notFlags.length)
-      argv2[notFlagsArgv] = [];
+      argv[notFlagsArgv] = [];
     notFlags.forEach(function(key) {
-      argv2[notFlagsArgv].push(key);
+      argv[notFlagsArgv].push(key);
     });
     if (configuration["camel-case-expansion"] && configuration["strip-dashed"]) {
-      Object.keys(argv2).filter((key) => key !== "--" && key.includes("-")).forEach((key) => {
-        delete argv2[key];
+      Object.keys(argv).filter((key) => key !== "--" && key.includes("-")).forEach((key) => {
+        delete argv[key];
       });
     }
     if (configuration["strip-aliased"]) {
       ;
       [].concat(...Object.keys(aliases).map((k) => aliases[k])).forEach((alias) => {
         if (configuration["camel-case-expansion"] && alias.includes("-")) {
-          delete argv2[alias.split(".").map((prop) => camelCase(prop)).join(".")];
+          delete argv[alias.split(".").map((prop) => camelCase(prop)).join(".")];
         }
-        delete argv2[alias];
+        delete argv[alias];
       });
     }
     function pushPositional(arg) {
       const maybeCoercedNumber = maybeCoerceNumber("_", arg);
       if (typeof maybeCoercedNumber === "string" || typeof maybeCoercedNumber === "number") {
-        argv2._.push(maybeCoercedNumber);
+        argv._.push(maybeCoercedNumber);
       }
     }
     function eatNargs(i, key, args2, argAfterEqualSign) {
@@ -12269,11 +12269,11 @@ var YargsParser = class {
       }
       const value = processValue(key, val, shouldStripQuotes);
       const splitKey = key.split(".");
-      setKey(argv2, splitKey, value);
+      setKey(argv, splitKey, value);
       if (flags.aliases[key]) {
         flags.aliases[key].forEach(function(x) {
           const keyProperties = x.split(".");
-          setKey(argv2, keyProperties, value);
+          setKey(argv, keyProperties, value);
         });
       }
       if (splitKey.length > 1 && configuration["dot-notation"]) {
@@ -12284,7 +12284,7 @@ var YargsParser = class {
           a.shift();
           keyProperties = keyProperties.concat(a);
           if (!(flags.aliases[key] || []).includes(keyProperties.join("."))) {
-            setKey(argv2, keyProperties, value);
+            setKey(argv, keyProperties, value);
           }
         });
       }
@@ -12347,11 +12347,11 @@ var YargsParser = class {
       }
       return value;
     }
-    function setConfig(argv3) {
+    function setConfig(argv2) {
       const configLookup = /* @__PURE__ */ Object.create(null);
       applyDefaultsAndAliases(configLookup, flags.aliases, defaults);
       Object.keys(flags.configs).forEach(function(configKey) {
-        const configPath = argv3[configKey] || configLookup[configKey];
+        const configPath = argv2[configKey] || configLookup[configKey];
         if (configPath) {
           try {
             let config = null;
@@ -12374,7 +12374,7 @@ var YargsParser = class {
           } catch (ex) {
             if (ex.name === "PermissionDenied")
               error = ex;
-            else if (argv3[configKey])
+            else if (argv2[configKey])
               error = Error(__("Invalid JSON config file: %s", configPath));
           }
         }
@@ -12387,7 +12387,7 @@ var YargsParser = class {
         if (typeof value === "object" && value !== null && !Array.isArray(value) && configuration["dot-notation"]) {
           setConfigObject(value, fullKey);
         } else {
-          if (!hasKey(argv2, fullKey.split(".")) || checkAllAliases(fullKey, flags.arrays) && configuration["combine-arrays"]) {
+          if (!hasKey(argv, fullKey.split(".")) || checkAllAliases(fullKey, flags.arrays) && configuration["combine-arrays"]) {
             setArg(fullKey, value);
           }
         }
@@ -12400,7 +12400,7 @@ var YargsParser = class {
         });
       }
     }
-    function applyEnvVars(argv3, configOnly) {
+    function applyEnvVars(argv2, configOnly) {
       if (typeof envPrefix === "undefined")
         return;
       const prefix = typeof envPrefix === "string" ? envPrefix : "";
@@ -12413,24 +12413,24 @@ var YargsParser = class {
             }
             return camelCase(key);
           });
-          if ((configOnly && flags.configs[keys.join(".")] || !configOnly) && !hasKey(argv3, keys)) {
+          if ((configOnly && flags.configs[keys.join(".")] || !configOnly) && !hasKey(argv2, keys)) {
             setArg(keys.join("."), env3[envVar]);
           }
         }
       });
     }
-    function applyCoercions(argv3) {
+    function applyCoercions(argv2) {
       let coerce;
       const applied = /* @__PURE__ */ new Set();
-      Object.keys(argv3).forEach(function(key) {
+      Object.keys(argv2).forEach(function(key) {
         if (!applied.has(key)) {
           coerce = checkAllAliases(key, flags.coercions);
           if (typeof coerce === "function") {
             try {
-              const value = maybeCoerceNumber(key, coerce(argv3[key]));
+              const value = maybeCoerceNumber(key, coerce(argv2[key]));
               [].concat(flags.aliases[key] || [], key).forEach((ali) => {
                 applied.add(ali);
-                argv3[ali] = value;
+                argv2[ali] = value;
               });
             } catch (err) {
               error = err;
@@ -12439,14 +12439,14 @@ var YargsParser = class {
         }
       });
     }
-    function setPlaceholderKeys(argv3) {
+    function setPlaceholderKeys(argv2) {
       flags.keys.forEach((key) => {
         if (~key.indexOf("."))
           return;
-        if (typeof argv3[key] === "undefined")
-          argv3[key] = void 0;
+        if (typeof argv2[key] === "undefined")
+          argv2[key] = void 0;
       });
-      return argv3;
+      return argv2;
     }
     function applyDefaultsAndAliases(obj, aliases2, defaults2, canLog = false) {
       Object.keys(defaults2).forEach(function(key) {
@@ -12657,7 +12657,7 @@ var YargsParser = class {
     }
     return {
       aliases: Object.assign({}, flags.aliases),
-      argv: Object.assign(argvReturn, argv2),
+      argv: Object.assign(argvReturn, argv),
       configuration,
       defaulted: Object.assign({}, defaulted),
       error,
@@ -12772,8 +12772,8 @@ function isBundledElectronApp() {
 function isElectronApp() {
   return !!process.versions.electron;
 }
-function hideBin(argv2) {
-  return argv2.slice(getProcessArgvBinIndex() + 1);
+function hideBin(argv) {
+  return argv.slice(getProcessArgvBinIndex() + 1);
 }
 function getProcessArgvBin() {
   return process.argv[getProcessArgvBinIndex()];
@@ -13207,7 +13207,7 @@ function commandMiddlewareFactory(commandMiddleware) {
     return middleware;
   });
 }
-function applyMiddleware(argv2, yargs, middlewares, beforeValidation) {
+function applyMiddleware(argv, yargs, middlewares, beforeValidation) {
   return middlewares.reduce((acc, middleware) => {
     if (middleware.applyBeforeValidation !== beforeValidation) {
       return acc;
@@ -13223,7 +13223,7 @@ function applyMiddleware(argv2, yargs, middlewares, beforeValidation) {
       const result = middleware(acc, yargs);
       return isPromise(result) ? result.then((middlewareObj) => Object.assign(acc, middlewareObj)) : Object.assign(acc, result);
     }
-  }, argv2);
+  }, argv);
 }
 
 // node_modules/yargs/build/lib/utils/maybe-async-result.js
@@ -13396,9 +13396,9 @@ var CommandInstance = class {
       innerYargs.getInternalMethods().getUsageInstance().usage(this.usageFromParentCommandsCommandHandler(parentCommands, commandHandler), commandHandler.description);
     }
     const innerArgv = innerYargs.getInternalMethods().runYargsParserAndExecuteCommands(null, void 0, true, commandIndex, helpOnly);
-    return isPromise(innerArgv) ? innerArgv.then((argv2) => ({
+    return isPromise(innerArgv) ? innerArgv.then((argv) => ({
       aliases: innerYargs.parsed.aliases,
-      innerArgv: argv2
+      innerArgv: argv
     })) : {
       aliases: innerYargs.parsed.aliases,
       innerArgv
@@ -13461,31 +13461,31 @@ var CommandInstance = class {
     const maybePromiseArgv = applyMiddleware(innerArgv, yargs, middlewares, true);
     return isPromise(maybePromiseArgv) ? maybePromiseArgv.then((resolvedInnerArgv) => this.handleValidationAndGetResult(isDefaultCommand, commandHandler, resolvedInnerArgv, currentContext, aliases, yargs, middlewares, positionalMap)) : this.handleValidationAndGetResult(isDefaultCommand, commandHandler, maybePromiseArgv, currentContext, aliases, yargs, middlewares, positionalMap);
   }
-  populatePositionals(commandHandler, argv2, context, yargs) {
-    argv2._ = argv2._.slice(context.commands.length);
+  populatePositionals(commandHandler, argv, context, yargs) {
+    argv._ = argv._.slice(context.commands.length);
     const demanded = commandHandler.demanded.slice(0);
     const optional = commandHandler.optional.slice(0);
     const positionalMap = {};
-    this.validation.positionalCount(demanded.length, argv2._.length);
+    this.validation.positionalCount(demanded.length, argv._.length);
     while (demanded.length) {
       const demand = demanded.shift();
-      this.populatePositional(demand, argv2, positionalMap);
+      this.populatePositional(demand, argv, positionalMap);
     }
     while (optional.length) {
       const maybe = optional.shift();
-      this.populatePositional(maybe, argv2, positionalMap);
+      this.populatePositional(maybe, argv, positionalMap);
     }
-    argv2._ = context.commands.concat(argv2._.map((a) => "" + a));
-    this.postProcessPositionals(argv2, positionalMap, this.cmdToParseOptions(commandHandler.original), yargs);
+    argv._ = context.commands.concat(argv._.map((a) => "" + a));
+    this.postProcessPositionals(argv, positionalMap, this.cmdToParseOptions(commandHandler.original), yargs);
     return positionalMap;
   }
-  populatePositional(positional, argv2, positionalMap) {
+  populatePositional(positional, argv, positionalMap) {
     const cmd = positional.cmd[0];
     if (positional.variadic) {
-      positionalMap[cmd] = argv2._.splice(0).map(String);
+      positionalMap[cmd] = argv._.splice(0).map(String);
     } else {
-      if (argv2._.length)
-        positionalMap[cmd] = [String(argv2._.shift())];
+      if (argv._.length)
+        positionalMap[cmd] = [String(argv._.shift())];
     }
   }
   cmdToParseOptions(cmdString) {
@@ -13515,7 +13515,7 @@ var CommandInstance = class {
     });
     return parseOptions;
   }
-  postProcessPositionals(argv2, positionalMap, parseOptions, yargs) {
+  postProcessPositionals(argv, positionalMap, parseOptions, yargs) {
     const options = Object.assign({}, yargs.getOptions());
     options.default = Object.assign(parseOptions.default, options.default);
     for (const key of Object.keys(parseOptions.alias)) {
@@ -13551,10 +13551,10 @@ var CommandInstance = class {
         if (positionalKeys.includes(key)) {
           if (!positionalMap[key])
             positionalMap[key] = parsed.argv[key];
-          if (!this.isInConfigs(yargs, key) && !this.isDefaulted(yargs, key) && Object.prototype.hasOwnProperty.call(argv2, key) && Object.prototype.hasOwnProperty.call(parsed.argv, key) && (Array.isArray(argv2[key]) || Array.isArray(parsed.argv[key]))) {
-            argv2[key] = [].concat(argv2[key], parsed.argv[key]);
+          if (!this.isInConfigs(yargs, key) && !this.isDefaulted(yargs, key) && Object.prototype.hasOwnProperty.call(argv, key) && Object.prototype.hasOwnProperty.call(parsed.argv, key) && (Array.isArray(argv[key]) || Array.isArray(parsed.argv[key]))) {
+            argv[key] = [].concat(argv[key], parsed.argv[key]);
           } else {
-            argv2[key] = parsed.argv[key];
+            argv[key] = parsed.argv[key];
           }
         }
       });
@@ -14259,7 +14259,7 @@ var Completion = class {
     this.indexAfterLastReset = 0;
     this.zshShell = (_c2 = ((_a2 = this.shim.getEnv("SHELL")) === null || _a2 === void 0 ? void 0 : _a2.includes("zsh")) || ((_b2 = this.shim.getEnv("ZSH_NAME")) === null || _b2 === void 0 ? void 0 : _b2.includes("zsh"))) !== null && _c2 !== void 0 ? _c2 : false;
   }
-  defaultCompletion(args, argv2, current, done) {
+  defaultCompletion(args, argv, current, done) {
     const handlers = this.command.getCommandHandlers();
     for (let i = 0, ii = args.length; i < ii; ++i) {
       if (handlers[args[i]] && handlers[args[i]].builder) {
@@ -14274,9 +14274,9 @@ var Completion = class {
     }
     const completions = [];
     this.commandCompletions(completions, args, current);
-    this.optionCompletions(completions, args, argv2, current);
-    this.choicesFromOptionsCompletions(completions, args, argv2, current);
-    this.choicesFromPositionalsCompletions(completions, args, argv2, current);
+    this.optionCompletions(completions, args, argv, current);
+    this.choicesFromOptionsCompletions(completions, args, argv, current);
+    this.choicesFromPositionalsCompletions(completions, args, argv, current);
     done(null, completions);
   }
   commandCompletions(completions, args, current) {
@@ -14295,7 +14295,7 @@ var Completion = class {
       });
     }
   }
-  optionCompletions(completions, args, argv2, current) {
+  optionCompletions(completions, args, argv, current) {
     if ((current.match(/^-/) || current === "" && completions.length === 0) && !this.previousArgHasChoices(args)) {
       const options = this.yargs.getOptions();
       const positionalKeys = this.yargs.getGroups()[this.usage.getPositionalGroupName()] || [];
@@ -14308,7 +14308,7 @@ var Completion = class {
       });
     }
   }
-  choicesFromOptionsCompletions(completions, args, argv2, current) {
+  choicesFromOptionsCompletions(completions, args, argv, current) {
     if (this.previousArgHasChoices(args)) {
       const choices = this.getPreviousArgChoices(args);
       if (choices && choices.length > 0) {
@@ -14316,13 +14316,13 @@ var Completion = class {
       }
     }
   }
-  choicesFromPositionalsCompletions(completions, args, argv2, current) {
+  choicesFromPositionalsCompletions(completions, args, argv, current) {
     if (current === "" && completions.length > 0 && this.previousArgHasChoices(args)) {
       return;
     }
     const positionalKeys = this.yargs.getGroups()[this.usage.getPositionalGroupName()] || [];
     const offset = Math.max(this.indexAfterLastReset, this.yargs.getInternalMethods().getContext().commands.length + 1);
-    const positionalKey = positionalKeys[argv2._.length - offset - 1];
+    const positionalKey = positionalKeys[argv._.length - offset - 1];
     if (!positionalKey) {
       return;
     }
@@ -14400,10 +14400,10 @@ var Completion = class {
       completions.push(dashes + "no-" + keyWithDesc);
     }
   }
-  customCompletion(args, argv2, current, done) {
+  customCompletion(args, argv, current, done) {
     assertNotStrictEqual(this.customCompletionFunction, null, this.shim);
     if (isSyncCompletionFunction(this.customCompletionFunction)) {
-      const result = this.customCompletionFunction(current, argv2);
+      const result = this.customCompletionFunction(current, argv);
       if (isPromise(result)) {
         return result.then((list) => {
           this.shim.process.nextTick(() => {
@@ -14417,20 +14417,20 @@ var Completion = class {
       }
       return done(null, result);
     } else if (isFallbackCompletionFunction(this.customCompletionFunction)) {
-      return this.customCompletionFunction(current, argv2, (onCompleted = done) => this.defaultCompletion(args, argv2, current, onCompleted), (completions) => {
+      return this.customCompletionFunction(current, argv, (onCompleted = done) => this.defaultCompletion(args, argv, current, onCompleted), (completions) => {
         done(null, completions);
       });
     } else {
-      return this.customCompletionFunction(current, argv2, (completions) => {
+      return this.customCompletionFunction(current, argv, (completions) => {
         done(null, completions);
       });
     }
   }
   getCompletion(args, done) {
     const current = args.length ? args[args.length - 1] : "";
-    const argv2 = this.yargs.parse(args, true);
-    const completionFunction = this.customCompletionFunction ? (argv3) => this.customCompletion(args, argv3, current, done) : (argv3) => this.defaultCompletion(args, argv3, current, done);
-    return isPromise(argv2) ? argv2.then(completionFunction) : completionFunction(argv2);
+    const argv = this.yargs.parse(args, true);
+    const completionFunction = this.customCompletionFunction ? (argv2) => this.customCompletion(args, argv2, current, done) : (argv2) => this.defaultCompletion(args, argv2, current, done);
+    return isPromise(argv) ? argv.then(completionFunction) : completionFunction(argv);
   }
   generateCompletionScript($0, cmd) {
     let script = this.zshShell ? completionZshTemplate : completionShTemplate;
@@ -14495,9 +14495,9 @@ function validation(yargs, usage2, shim3) {
   const __ = shim3.y18n.__;
   const __n = shim3.y18n.__n;
   const self = {};
-  self.nonOptionCount = function nonOptionCount(argv2) {
+  self.nonOptionCount = function nonOptionCount(argv) {
     const demandedCommands = yargs.getDemandedCommands();
-    const positionalCount = argv2._.length + (argv2["--"] ? argv2["--"].length : 0);
+    const positionalCount = argv._.length + (argv["--"] ? argv["--"].length : 0);
     const _s = positionalCount - yargs.getInternalMethods().getContext().commands.length;
     if (demandedCommands._ && (_s < demandedCommands._.min || _s > demandedCommands._.max)) {
       if (_s < demandedCommands._.min) {
@@ -14520,10 +14520,10 @@ function validation(yargs, usage2, shim3) {
       usage2.fail(__n("Not enough non-option arguments: got %s, need at least %s", "Not enough non-option arguments: got %s, need at least %s", observed, observed + "", required + ""));
     }
   };
-  self.requiredArguments = function requiredArguments(argv2, demandedOptions) {
+  self.requiredArguments = function requiredArguments(argv, demandedOptions) {
     let missing = null;
     for (const key of Object.keys(demandedOptions)) {
-      if (!Object.prototype.hasOwnProperty.call(argv2, key) || typeof argv2[key] === "undefined") {
+      if (!Object.prototype.hasOwnProperty.call(argv, key) || typeof argv[key] === "undefined") {
         missing = missing || {};
         missing[key] = demandedOptions[key];
       }
@@ -14541,18 +14541,18 @@ ${customMsgs.join("\n")}` : "";
       usage2.fail(__n("Missing required argument: %s", "Missing required arguments: %s", Object.keys(missing).length, Object.keys(missing).join(", ") + customMsg));
     }
   };
-  self.unknownArguments = function unknownArguments(argv2, aliases, positionalMap, isDefaultCommand, checkPositionals = true) {
+  self.unknownArguments = function unknownArguments(argv, aliases, positionalMap, isDefaultCommand, checkPositionals = true) {
     var _a2;
     const commandKeys = yargs.getInternalMethods().getCommandInstance().getCommands();
     const unknown = [];
     const currentContext = yargs.getInternalMethods().getContext();
-    Object.keys(argv2).forEach((key) => {
+    Object.keys(argv).forEach((key) => {
       if (!specialKeys.includes(key) && !Object.prototype.hasOwnProperty.call(positionalMap, key) && !Object.prototype.hasOwnProperty.call(yargs.getInternalMethods().getParseContext(), key) && !self.isValidAndSomeAliasIsNotNew(key, aliases)) {
         unknown.push(key);
       }
     });
     if (checkPositionals && (currentContext.commands.length > 0 || commandKeys.length > 0 || isDefaultCommand)) {
-      argv2._.slice(currentContext.commands.length).forEach((key) => {
+      argv._.slice(currentContext.commands.length).forEach((key) => {
         if (!commandKeys.includes("" + key)) {
           unknown.push("" + key);
         }
@@ -14562,8 +14562,8 @@ ${customMsgs.join("\n")}` : "";
       const demandedCommands = yargs.getDemandedCommands();
       const maxNonOptDemanded = ((_a2 = demandedCommands._) === null || _a2 === void 0 ? void 0 : _a2.max) || 0;
       const expected = currentContext.commands.length + maxNonOptDemanded;
-      if (expected < argv2._.length) {
-        argv2._.slice(expected).forEach((key) => {
+      if (expected < argv._.length) {
+        argv._.slice(expected).forEach((key) => {
           key = String(key);
           if (!currentContext.commands.includes(key) && !unknown.includes(key)) {
             unknown.push(key);
@@ -14575,12 +14575,12 @@ ${customMsgs.join("\n")}` : "";
       usage2.fail(__n("Unknown argument: %s", "Unknown arguments: %s", unknown.length, unknown.map((s) => s.trim() ? s : `"${s}"`).join(", ")));
     }
   };
-  self.unknownCommands = function unknownCommands(argv2) {
+  self.unknownCommands = function unknownCommands(argv) {
     const commandKeys = yargs.getInternalMethods().getCommandInstance().getCommands();
     const unknown = [];
     const currentContext = yargs.getInternalMethods().getContext();
     if (currentContext.commands.length > 0 || commandKeys.length > 0) {
-      argv2._.slice(currentContext.commands.length).forEach((key) => {
+      argv._.slice(currentContext.commands.length).forEach((key) => {
         if (!commandKeys.includes("" + key)) {
           unknown.push("" + key);
         }
@@ -14600,14 +14600,14 @@ ${customMsgs.join("\n")}` : "";
     const newAliases = yargs.parsed.newAliases;
     return [key, ...aliases[key]].some((a) => !Object.prototype.hasOwnProperty.call(newAliases, a) || !newAliases[key]);
   };
-  self.limitedChoices = function limitedChoices(argv2) {
+  self.limitedChoices = function limitedChoices(argv) {
     const options = yargs.getOptions();
     const invalid = {};
     if (!Object.keys(options.choices).length)
       return;
-    Object.keys(argv2).forEach((key) => {
+    Object.keys(argv).forEach((key) => {
       if (specialKeys.indexOf(key) === -1 && Object.prototype.hasOwnProperty.call(options.choices, key)) {
-        [].concat(argv2[key]).forEach((value) => {
+        [].concat(argv[key]).forEach((value) => {
           if (options.choices[key].indexOf(value) === -1 && value !== void 0) {
             invalid[key] = (invalid[key] || []).concat(value);
           }
@@ -14647,28 +14647,28 @@ ${customMsgs.join("\n")}` : "";
   self.getImplied = function getImplied() {
     return implied;
   };
-  function keyExists(argv2, val) {
+  function keyExists(argv, val) {
     const num = Number(val);
     val = isNaN(num) ? val : num;
     if (typeof val === "number") {
-      val = argv2._.length >= val;
+      val = argv._.length >= val;
     } else if (val.match(/^--no-.+/)) {
       val = val.match(/^--no-(.+)/)[1];
-      val = !Object.prototype.hasOwnProperty.call(argv2, val);
+      val = !Object.prototype.hasOwnProperty.call(argv, val);
     } else {
-      val = Object.prototype.hasOwnProperty.call(argv2, val);
+      val = Object.prototype.hasOwnProperty.call(argv, val);
     }
     return val;
   }
-  self.implications = function implications(argv2) {
+  self.implications = function implications(argv) {
     const implyFail = [];
     Object.keys(implied).forEach((key) => {
       const origKey = key;
       (implied[key] || []).forEach((value) => {
         let key2 = origKey;
         const origValue = value;
-        key2 = keyExists(argv2, key2);
-        value = keyExists(argv2, value);
+        key2 = keyExists(argv, key2);
+        value = keyExists(argv, value);
         if (key2 && !value) {
           implyFail.push(` ${origKey} -> ${origValue}`);
         }
@@ -14703,11 +14703,11 @@ ${customMsgs.join("\n")}` : "";
     }
   };
   self.getConflicting = () => conflicting;
-  self.conflicting = function conflictingFn(argv2) {
-    Object.keys(argv2).forEach((key) => {
+  self.conflicting = function conflictingFn(argv) {
+    Object.keys(argv).forEach((key) => {
       if (conflicting[key]) {
         conflicting[key].forEach((value) => {
-          if (value && argv2[key] !== void 0 && argv2[value] !== void 0) {
+          if (value && argv[key] !== void 0 && argv[value] !== void 0) {
             usage2.fail(__("Arguments %s and %s are mutually exclusive", key, value));
           }
         });
@@ -14716,7 +14716,7 @@ ${customMsgs.join("\n")}` : "";
     if (yargs.getInternalMethods().getParserConfiguration()["strip-dashed"]) {
       Object.keys(conflicting).forEach((key) => {
         conflicting[key].forEach((value) => {
-          if (value && argv2[shim3.Parser.camelCase(key)] !== void 0 && argv2[shim3.Parser.camelCase(value)] !== void 0) {
+          if (value && argv[shim3.Parser.camelCase(key)] !== void 0 && argv[shim3.Parser.camelCase(value)] !== void 0) {
             usage2.fail(__("Arguments %s and %s are mutually exclusive", key, value));
           }
         });
@@ -15010,19 +15010,19 @@ var YargsInstance = class {
   }
   check(f, global2) {
     argsert("<function> [boolean]", [f, global2], arguments.length);
-    this.middleware((argv2, _yargs) => {
+    this.middleware((argv, _yargs) => {
       return maybeAsyncResult(() => {
-        return f(argv2, _yargs.getOptions());
+        return f(argv, _yargs.getOptions());
       }, (result) => {
         if (!result) {
           __classPrivateFieldGet(this, _YargsInstance_usage, "f").fail(__classPrivateFieldGet(this, _YargsInstance_shim, "f").y18n.__("Argument check failed: %s", f.toString()));
         } else if (typeof result === "string" || result instanceof Error) {
           __classPrivateFieldGet(this, _YargsInstance_usage, "f").fail(result.toString(), result);
         }
-        return argv2;
+        return argv;
       }, (err) => {
         __classPrivateFieldGet(this, _YargsInstance_usage, "f").fail(err.message ? err.message : err.toString(), err);
-        return argv2;
+        return argv;
       });
     }, false, global2);
     return this;
@@ -15052,24 +15052,24 @@ var YargsInstance = class {
       throw new YError("coerce callback must be provided");
     }
     __classPrivateFieldGet(this, _YargsInstance_options, "f").key[keys] = true;
-    __classPrivateFieldGet(this, _YargsInstance_globalMiddleware, "f").addCoerceMiddleware((argv2, yargs) => {
+    __classPrivateFieldGet(this, _YargsInstance_globalMiddleware, "f").addCoerceMiddleware((argv, yargs) => {
       let aliases;
-      const shouldCoerce = Object.prototype.hasOwnProperty.call(argv2, keys);
+      const shouldCoerce = Object.prototype.hasOwnProperty.call(argv, keys);
       if (!shouldCoerce) {
-        return argv2;
+        return argv;
       }
       return maybeAsyncResult(() => {
         aliases = yargs.getAliases();
-        return value(argv2[keys]);
+        return value(argv[keys]);
       }, (result) => {
-        argv2[keys] = result;
+        argv[keys] = result;
         const stripAliased = yargs.getInternalMethods().getParserConfiguration()["strip-aliased"];
         if (aliases[keys] && stripAliased !== true) {
           for (const alias of aliases[keys]) {
-            argv2[alias] = result;
+            argv[alias] = result;
           }
         }
-        return argv2;
+        return argv;
       }, (err) => {
         throw new YError(err.message);
       });
@@ -15265,12 +15265,12 @@ var YargsInstance = class {
   async getCompletion(args, done) {
     argsert("<array> [function]", [args, done], arguments.length);
     if (!done) {
-      return new Promise((resolve6, reject) => {
+      return new Promise((resolve7, reject) => {
         __classPrivateFieldGet(this, _YargsInstance_completion, "f").getCompletion(args, (err, completions) => {
           if (err)
             reject(err);
           else
-            resolve6(completions);
+            resolve7(completions);
         });
       });
     } else {
@@ -15529,10 +15529,10 @@ var YargsInstance = class {
     const tmpParsed = this.parsed;
     __classPrivateFieldGet(this, _YargsInstance_completion, "f").setParsed(this.parsed);
     if (isPromise(parsed)) {
-      return parsed.then((argv2) => {
+      return parsed.then((argv) => {
         if (__classPrivateFieldGet(this, _YargsInstance_parseFn, "f"))
-          __classPrivateFieldGet(this, _YargsInstance_parseFn, "f").call(this, __classPrivateFieldGet(this, _YargsInstance_exitError, "f"), argv2, __classPrivateFieldGet(this, _YargsInstance_output, "f"));
-        return argv2;
+          __classPrivateFieldGet(this, _YargsInstance_parseFn, "f").call(this, __classPrivateFieldGet(this, _YargsInstance_exitError, "f"), argv, __classPrivateFieldGet(this, _YargsInstance_output, "f"));
+        return argv;
       }).catch((err) => {
         if (__classPrivateFieldGet(this, _YargsInstance_parseFn, "f")) {
           __classPrivateFieldGet(this, _YargsInstance_parseFn, "f")(err, this.parsed.argv, __classPrivateFieldGet(this, _YargsInstance_output, "f"));
@@ -15773,15 +15773,15 @@ var YargsInstance = class {
     __classPrivateFieldGet(this, _YargsInstance_usage, "f").wrap(cols);
     return this;
   }
-  [(_YargsInstance_command = /* @__PURE__ */ new WeakMap(), _YargsInstance_cwd = /* @__PURE__ */ new WeakMap(), _YargsInstance_context = /* @__PURE__ */ new WeakMap(), _YargsInstance_completion = /* @__PURE__ */ new WeakMap(), _YargsInstance_completionCommand = /* @__PURE__ */ new WeakMap(), _YargsInstance_defaultShowHiddenOpt = /* @__PURE__ */ new WeakMap(), _YargsInstance_exitError = /* @__PURE__ */ new WeakMap(), _YargsInstance_detectLocale = /* @__PURE__ */ new WeakMap(), _YargsInstance_emittedWarnings = /* @__PURE__ */ new WeakMap(), _YargsInstance_exitProcess = /* @__PURE__ */ new WeakMap(), _YargsInstance_frozens = /* @__PURE__ */ new WeakMap(), _YargsInstance_globalMiddleware = /* @__PURE__ */ new WeakMap(), _YargsInstance_groups = /* @__PURE__ */ new WeakMap(), _YargsInstance_hasOutput = /* @__PURE__ */ new WeakMap(), _YargsInstance_helpOpt = /* @__PURE__ */ new WeakMap(), _YargsInstance_isGlobalContext = /* @__PURE__ */ new WeakMap(), _YargsInstance_logger = /* @__PURE__ */ new WeakMap(), _YargsInstance_output = /* @__PURE__ */ new WeakMap(), _YargsInstance_options = /* @__PURE__ */ new WeakMap(), _YargsInstance_parentRequire = /* @__PURE__ */ new WeakMap(), _YargsInstance_parserConfig = /* @__PURE__ */ new WeakMap(), _YargsInstance_parseFn = /* @__PURE__ */ new WeakMap(), _YargsInstance_parseContext = /* @__PURE__ */ new WeakMap(), _YargsInstance_pkgs = /* @__PURE__ */ new WeakMap(), _YargsInstance_preservedGroups = /* @__PURE__ */ new WeakMap(), _YargsInstance_processArgs = /* @__PURE__ */ new WeakMap(), _YargsInstance_recommendCommands = /* @__PURE__ */ new WeakMap(), _YargsInstance_shim = /* @__PURE__ */ new WeakMap(), _YargsInstance_strict = /* @__PURE__ */ new WeakMap(), _YargsInstance_strictCommands = /* @__PURE__ */ new WeakMap(), _YargsInstance_strictOptions = /* @__PURE__ */ new WeakMap(), _YargsInstance_usage = /* @__PURE__ */ new WeakMap(), _YargsInstance_usageConfig = /* @__PURE__ */ new WeakMap(), _YargsInstance_versionOpt = /* @__PURE__ */ new WeakMap(), _YargsInstance_validation = /* @__PURE__ */ new WeakMap(), kCopyDoubleDash)](argv2) {
-    if (!argv2._ || !argv2["--"])
-      return argv2;
-    argv2._.push.apply(argv2._, argv2["--"]);
+  [(_YargsInstance_command = /* @__PURE__ */ new WeakMap(), _YargsInstance_cwd = /* @__PURE__ */ new WeakMap(), _YargsInstance_context = /* @__PURE__ */ new WeakMap(), _YargsInstance_completion = /* @__PURE__ */ new WeakMap(), _YargsInstance_completionCommand = /* @__PURE__ */ new WeakMap(), _YargsInstance_defaultShowHiddenOpt = /* @__PURE__ */ new WeakMap(), _YargsInstance_exitError = /* @__PURE__ */ new WeakMap(), _YargsInstance_detectLocale = /* @__PURE__ */ new WeakMap(), _YargsInstance_emittedWarnings = /* @__PURE__ */ new WeakMap(), _YargsInstance_exitProcess = /* @__PURE__ */ new WeakMap(), _YargsInstance_frozens = /* @__PURE__ */ new WeakMap(), _YargsInstance_globalMiddleware = /* @__PURE__ */ new WeakMap(), _YargsInstance_groups = /* @__PURE__ */ new WeakMap(), _YargsInstance_hasOutput = /* @__PURE__ */ new WeakMap(), _YargsInstance_helpOpt = /* @__PURE__ */ new WeakMap(), _YargsInstance_isGlobalContext = /* @__PURE__ */ new WeakMap(), _YargsInstance_logger = /* @__PURE__ */ new WeakMap(), _YargsInstance_output = /* @__PURE__ */ new WeakMap(), _YargsInstance_options = /* @__PURE__ */ new WeakMap(), _YargsInstance_parentRequire = /* @__PURE__ */ new WeakMap(), _YargsInstance_parserConfig = /* @__PURE__ */ new WeakMap(), _YargsInstance_parseFn = /* @__PURE__ */ new WeakMap(), _YargsInstance_parseContext = /* @__PURE__ */ new WeakMap(), _YargsInstance_pkgs = /* @__PURE__ */ new WeakMap(), _YargsInstance_preservedGroups = /* @__PURE__ */ new WeakMap(), _YargsInstance_processArgs = /* @__PURE__ */ new WeakMap(), _YargsInstance_recommendCommands = /* @__PURE__ */ new WeakMap(), _YargsInstance_shim = /* @__PURE__ */ new WeakMap(), _YargsInstance_strict = /* @__PURE__ */ new WeakMap(), _YargsInstance_strictCommands = /* @__PURE__ */ new WeakMap(), _YargsInstance_strictOptions = /* @__PURE__ */ new WeakMap(), _YargsInstance_usage = /* @__PURE__ */ new WeakMap(), _YargsInstance_usageConfig = /* @__PURE__ */ new WeakMap(), _YargsInstance_versionOpt = /* @__PURE__ */ new WeakMap(), _YargsInstance_validation = /* @__PURE__ */ new WeakMap(), kCopyDoubleDash)](argv) {
+    if (!argv._ || !argv["--"])
+      return argv;
+    argv._.push.apply(argv._, argv["--"]);
     try {
-      delete argv2["--"];
+      delete argv["--"];
     } catch (_err) {
     }
-    return argv2;
+    return argv;
   }
   [kCreateLogger]() {
     return {
@@ -15878,14 +15878,14 @@ var YargsInstance = class {
     const obj = this[kPkgUp]();
     return obj.version || "unknown";
   }
-  [kParsePositionalNumbers](argv2) {
-    const args = argv2["--"] ? argv2["--"] : argv2._;
+  [kParsePositionalNumbers](argv) {
+    const args = argv["--"] ? argv["--"] : argv._;
     for (let i = 0, arg; (arg = args[i]) !== void 0; i++) {
       if (__classPrivateFieldGet(this, _YargsInstance_shim, "f").Parser.looksLikeNumber(arg) && Number.isSafeInteger(Math.floor(parseFloat(`${arg}`)))) {
         args[i] = Number(arg);
       }
     }
-    return argv2;
+    return argv;
   }
   [kPkgUp](rootPath) {
     const npath = rootPath || "*";
@@ -16001,8 +16001,8 @@ var YargsInstance = class {
     __classPrivateFieldGet(this, _YargsInstance_command, "f").unfreeze();
     __classPrivateFieldGet(this, _YargsInstance_globalMiddleware, "f").unfreeze();
   }
-  [kValidateAsync](validation2, argv2) {
-    return maybeAsyncResult(argv2, (result) => {
+  [kValidateAsync](validation2, argv) {
+    return maybeAsyncResult(argv, (result) => {
       validation2(result);
       return result;
     });
@@ -16054,22 +16054,22 @@ var YargsInstance = class {
   [kIsGlobalContext]() {
     return __classPrivateFieldGet(this, _YargsInstance_isGlobalContext, "f");
   }
-  [kPostProcess](argv2, populateDoubleDash, calledFromCommand, runGlobalMiddleware) {
+  [kPostProcess](argv, populateDoubleDash, calledFromCommand, runGlobalMiddleware) {
     if (calledFromCommand)
-      return argv2;
-    if (isPromise(argv2))
-      return argv2;
+      return argv;
+    if (isPromise(argv))
+      return argv;
     if (!populateDoubleDash) {
-      argv2 = this[kCopyDoubleDash](argv2);
+      argv = this[kCopyDoubleDash](argv);
     }
     const parsePositionalNumbers = this[kGetParserConfiguration]()["parse-positional-numbers"] || this[kGetParserConfiguration]()["parse-positional-numbers"] === void 0;
     if (parsePositionalNumbers) {
-      argv2 = this[kParsePositionalNumbers](argv2);
+      argv = this[kParsePositionalNumbers](argv);
     }
     if (runGlobalMiddleware) {
-      argv2 = applyMiddleware(argv2, this, __classPrivateFieldGet(this, _YargsInstance_globalMiddleware, "f").getMiddleware(), false);
+      argv = applyMiddleware(argv, this, __classPrivateFieldGet(this, _YargsInstance_globalMiddleware, "f").getMiddleware(), false);
     }
-    return argv2;
+    return argv;
   }
   [kReset](aliases = {}) {
     __classPrivateFieldSet(this, _YargsInstance_options, __classPrivateFieldGet(this, _YargsInstance_options, "f") || {}, "f");
@@ -16149,19 +16149,19 @@ var YargsInstance = class {
     const parsed = __classPrivateFieldGet(this, _YargsInstance_shim, "f").Parser.detailed(args, Object.assign({}, __classPrivateFieldGet(this, _YargsInstance_options, "f"), {
       configuration: { "parse-positional-numbers": false, ...config }
     }));
-    const argv2 = Object.assign(parsed.argv, __classPrivateFieldGet(this, _YargsInstance_parseContext, "f"));
+    const argv = Object.assign(parsed.argv, __classPrivateFieldGet(this, _YargsInstance_parseContext, "f"));
     let argvPromise = void 0;
     const aliases = parsed.aliases;
     let helpOptSet = false;
     let versionOptSet = false;
-    Object.keys(argv2).forEach((key) => {
-      if (key === __classPrivateFieldGet(this, _YargsInstance_helpOpt, "f") && argv2[key]) {
+    Object.keys(argv).forEach((key) => {
+      if (key === __classPrivateFieldGet(this, _YargsInstance_helpOpt, "f") && argv[key]) {
         helpOptSet = true;
-      } else if (key === __classPrivateFieldGet(this, _YargsInstance_versionOpt, "f") && argv2[key]) {
+      } else if (key === __classPrivateFieldGet(this, _YargsInstance_versionOpt, "f") && argv[key]) {
         versionOptSet = true;
       }
     });
-    argv2.$0 = this.$0;
+    argv.$0 = this.$0;
     this.parsed = parsed;
     if (commandIndex === 0) {
       __classPrivateFieldGet(this, _YargsInstance_usage, "f").clearCachedHelpMessage();
@@ -16169,24 +16169,24 @@ var YargsInstance = class {
     try {
       this[kGuessLocale]();
       if (shortCircuit) {
-        return this[kPostProcess](argv2, populateDoubleDash, !!calledFromCommand, false);
+        return this[kPostProcess](argv, populateDoubleDash, !!calledFromCommand, false);
       }
       if (__classPrivateFieldGet(this, _YargsInstance_helpOpt, "f")) {
         const helpCmds = [__classPrivateFieldGet(this, _YargsInstance_helpOpt, "f")].concat(aliases[__classPrivateFieldGet(this, _YargsInstance_helpOpt, "f")] || []).filter((k) => k.length > 1);
-        if (helpCmds.includes("" + argv2._[argv2._.length - 1])) {
-          argv2._.pop();
+        if (helpCmds.includes("" + argv._[argv._.length - 1])) {
+          argv._.pop();
           helpOptSet = true;
         }
       }
       __classPrivateFieldSet(this, _YargsInstance_isGlobalContext, false, "f");
       const handlerKeys = __classPrivateFieldGet(this, _YargsInstance_command, "f").getCommands();
-      const requestCompletions = __classPrivateFieldGet(this, _YargsInstance_completion, "f").completionKey in argv2;
+      const requestCompletions = __classPrivateFieldGet(this, _YargsInstance_completion, "f").completionKey in argv;
       const skipRecommendation = helpOptSet || requestCompletions || helpOnly;
-      if (argv2._.length) {
+      if (argv._.length) {
         if (handlerKeys.length) {
           let firstUnknownCommand;
-          for (let i = commandIndex || 0, cmd; argv2._[i] !== void 0; i++) {
-            cmd = String(argv2._[i]);
+          for (let i = commandIndex || 0, cmd; argv._[i] !== void 0; i++) {
+            cmd = String(argv._[i]);
             if (handlerKeys.includes(cmd) && cmd !== __classPrivateFieldGet(this, _YargsInstance_completionCommand, "f")) {
               const innerArgv = __classPrivateFieldGet(this, _YargsInstance_command, "f").runCommand(cmd, this, parsed, i + 1, helpOnly, helpOptSet || versionOptSet || helpOnly);
               return this[kPostProcess](innerArgv, populateDoubleDash, !!calledFromCommand, false);
@@ -16199,7 +16199,7 @@ var YargsInstance = class {
             __classPrivateFieldGet(this, _YargsInstance_validation, "f").recommendCommands(firstUnknownCommand, handlerKeys);
           }
         }
-        if (__classPrivateFieldGet(this, _YargsInstance_completionCommand, "f") && argv2._.includes(__classPrivateFieldGet(this, _YargsInstance_completionCommand, "f")) && !requestCompletions) {
+        if (__classPrivateFieldGet(this, _YargsInstance_completionCommand, "f") && argv._.includes(__classPrivateFieldGet(this, _YargsInstance_completionCommand, "f")) && !requestCompletions) {
           if (__classPrivateFieldGet(this, _YargsInstance_exitProcess, "f"))
             setBlocking(true);
           this.showCompletionScript();
@@ -16223,7 +16223,7 @@ var YargsInstance = class {
           });
           this.exit(0);
         });
-        return this[kPostProcess](argv2, !populateDoubleDash, !!calledFromCommand, false);
+        return this[kPostProcess](argv, !populateDoubleDash, !!calledFromCommand, false);
       }
       if (!__classPrivateFieldGet(this, _YargsInstance_hasOutput, "f")) {
         if (helpOptSet) {
@@ -16241,7 +16241,7 @@ var YargsInstance = class {
         }
       }
       if (!skipValidation && __classPrivateFieldGet(this, _YargsInstance_options, "f").skipValidation.length > 0) {
-        skipValidation = Object.keys(argv2).some((key) => __classPrivateFieldGet(this, _YargsInstance_options, "f").skipValidation.indexOf(key) >= 0 && argv2[key] === true);
+        skipValidation = Object.keys(argv).some((key) => __classPrivateFieldGet(this, _YargsInstance_options, "f").skipValidation.indexOf(key) >= 0 && argv[key] === true);
       }
       if (!skipValidation) {
         if (parsed.error)
@@ -16249,12 +16249,12 @@ var YargsInstance = class {
         if (!requestCompletions) {
           const validation2 = this[kRunValidation](aliases, {}, parsed.error);
           if (!calledFromCommand) {
-            argvPromise = applyMiddleware(argv2, this, __classPrivateFieldGet(this, _YargsInstance_globalMiddleware, "f").getMiddleware(), true);
+            argvPromise = applyMiddleware(argv, this, __classPrivateFieldGet(this, _YargsInstance_globalMiddleware, "f").getMiddleware(), true);
           }
-          argvPromise = this[kValidateAsync](validation2, argvPromise !== null && argvPromise !== void 0 ? argvPromise : argv2);
+          argvPromise = this[kValidateAsync](validation2, argvPromise !== null && argvPromise !== void 0 ? argvPromise : argv);
           if (isPromise(argvPromise) && !calledFromCommand) {
             argvPromise = argvPromise.then(() => {
-              return applyMiddleware(argv2, this, __classPrivateFieldGet(this, _YargsInstance_globalMiddleware, "f").getMiddleware(), false);
+              return applyMiddleware(argv, this, __classPrivateFieldGet(this, _YargsInstance_globalMiddleware, "f").getMiddleware(), false);
             });
           }
         }
@@ -16265,27 +16265,27 @@ var YargsInstance = class {
       else
         throw err;
     }
-    return this[kPostProcess](argvPromise !== null && argvPromise !== void 0 ? argvPromise : argv2, populateDoubleDash, !!calledFromCommand, true);
+    return this[kPostProcess](argvPromise !== null && argvPromise !== void 0 ? argvPromise : argv, populateDoubleDash, !!calledFromCommand, true);
   }
   [kRunValidation](aliases, positionalMap, parseErrors, isDefaultCommand) {
     const demandedOptions = { ...this.getDemandedOptions() };
-    return (argv2) => {
+    return (argv) => {
       if (parseErrors)
         throw new YError(parseErrors.message);
-      __classPrivateFieldGet(this, _YargsInstance_validation, "f").nonOptionCount(argv2);
-      __classPrivateFieldGet(this, _YargsInstance_validation, "f").requiredArguments(argv2, demandedOptions);
+      __classPrivateFieldGet(this, _YargsInstance_validation, "f").nonOptionCount(argv);
+      __classPrivateFieldGet(this, _YargsInstance_validation, "f").requiredArguments(argv, demandedOptions);
       let failedStrictCommands = false;
       if (__classPrivateFieldGet(this, _YargsInstance_strictCommands, "f")) {
-        failedStrictCommands = __classPrivateFieldGet(this, _YargsInstance_validation, "f").unknownCommands(argv2);
+        failedStrictCommands = __classPrivateFieldGet(this, _YargsInstance_validation, "f").unknownCommands(argv);
       }
       if (__classPrivateFieldGet(this, _YargsInstance_strict, "f") && !failedStrictCommands) {
-        __classPrivateFieldGet(this, _YargsInstance_validation, "f").unknownArguments(argv2, aliases, positionalMap, !!isDefaultCommand);
+        __classPrivateFieldGet(this, _YargsInstance_validation, "f").unknownArguments(argv, aliases, positionalMap, !!isDefaultCommand);
       } else if (__classPrivateFieldGet(this, _YargsInstance_strictOptions, "f")) {
-        __classPrivateFieldGet(this, _YargsInstance_validation, "f").unknownArguments(argv2, aliases, {}, false, false);
+        __classPrivateFieldGet(this, _YargsInstance_validation, "f").unknownArguments(argv, aliases, {}, false, false);
       }
-      __classPrivateFieldGet(this, _YargsInstance_validation, "f").limitedChoices(argv2);
-      __classPrivateFieldGet(this, _YargsInstance_validation, "f").implications(argv2);
-      __classPrivateFieldGet(this, _YargsInstance_validation, "f").conflicting(argv2);
+      __classPrivateFieldGet(this, _YargsInstance_validation, "f").limitedChoices(argv);
+      __classPrivateFieldGet(this, _YargsInstance_validation, "f").implications(argv);
+      __classPrivateFieldGet(this, _YargsInstance_validation, "f").conflicting(argv);
     };
   }
   [kSetHasOutput]() {
@@ -17341,13 +17341,13 @@ var PromisePolyfill = class extends Promise {
   // Available starting from Node 22
   // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/withResolvers
   static withResolver() {
-    let resolve6;
+    let resolve7;
     let reject;
     const promise = new Promise((res, rej) => {
-      resolve6 = res;
+      resolve7 = res;
       reject = rej;
     });
-    return { promise, resolve: resolve6, reject };
+    return { promise, resolve: resolve7, reject };
   }
 };
 
@@ -17381,7 +17381,7 @@ function createPrompt(view) {
       output
     });
     const screen = new ScreenManager(rl);
-    const { promise, resolve: resolve6, reject } = PromisePolyfill.withResolver();
+    const { promise, resolve: resolve7, reject } = PromisePolyfill.withResolver();
     const cancel = () => reject(new CancelPromptError());
     if (signal) {
       const abort = () => reject(new AbortPromptError({ cause: signal.reason }));
@@ -17408,7 +17408,7 @@ function createPrompt(view) {
       cycle(() => {
         try {
           const nextView = view(config, (value) => {
-            setImmediate(() => resolve6(value));
+            setImmediate(() => resolve7(value));
           });
           if (nextView === void 0) {
             const callerFilename = callSites[1]?.getFileName();
@@ -18738,8 +18738,8 @@ function describeWorktree(worktreePath, repo) {
   const label = repo ? `${repo} / ${name}${branchDiffers ? ` (branch: ${branch})` : ""}` : `${name}${branchDiffers ? ` (branch: ${branch})` : ""}`;
   return { repo, name, path: worktreePath, branch, branchDiffers, label };
 }
-function discoverWorktrees(root2 = null) {
-  const rootDir = root2 ?? process.env.GWT_WORKTREES_ROOT ?? DEFAULT_ROOT;
+function discoverWorktrees(root = null) {
+  const rootDir = root ?? process.env.GWT_WORKTREES_ROOT ?? DEFAULT_ROOT;
   if (!(0, import_node_fs.existsSync)(rootDir)) {
     return [];
   }
@@ -19142,10 +19142,10 @@ var ansi_styles_default = ansiStyles;
 var import_node_process2 = __toESM(require("node:process"), 1);
 var import_node_os3 = __toESM(require("node:os"), 1);
 var import_node_tty = __toESM(require("node:tty"), 1);
-function hasFlag(flag, argv2 = globalThis.Deno ? globalThis.Deno.args : import_node_process2.default.argv) {
+function hasFlag(flag, argv = globalThis.Deno ? globalThis.Deno.args : import_node_process2.default.argv) {
   const prefix = flag.startsWith("-") ? "" : flag.length === 1 ? "-" : "--";
-  const position = argv2.indexOf(prefix + flag);
-  const terminatorPosition = argv2.indexOf("--");
+  const position = argv.indexOf(prefix + flag);
+  const terminatorPosition = argv.indexOf("--");
   return position !== -1 && (terminatorPosition === -1 || position < terminatorPosition);
 }
 var { env: env2 } = import_node_process2.default;
@@ -19563,11 +19563,11 @@ async function runBulkDelete(worktrees) {
   console.log(`
 Deleted ${deleted} of ${selected.length} worktree${selected.length > 1 ? "s" : ""}.`);
 }
-async function runInteractive({ root: root2 = null } = {}) {
+async function runInteractive({ root = null } = {}) {
   while (true) {
-    const worktrees = discoverWorktrees(root2);
+    const worktrees = discoverWorktrees(root);
     if (worktrees.length === 0) {
-      const rootLabel = root2 ?? process.env.GWT_WORKTREES_ROOT ?? `${process.env.HOME}/worktrees`;
+      const rootLabel = root ?? process.env.GWT_WORKTREES_ROOT ?? `${process.env.HOME}/worktrees`;
       console.log(`No worktrees found under ${rootLabel}`);
       process.exit(0);
     }
@@ -19634,16 +19634,170 @@ async function runInteractive({ root: root2 = null } = {}) {
   }
 }
 
+// src/backup.js
+var import_node_child_process3 = require("node:child_process");
+var import_node_fs3 = require("node:fs");
+var import_node_path4 = require("node:path");
+var import_node_os4 = require("node:os");
+var BACKUP_DIR = (0, import_node_path4.join)((0, import_node_os4.homedir)(), ".gwt");
+var BACKUP_FILE = (0, import_node_path4.join)(BACKUP_DIR, "backup.json");
+function resolveRepoRoot2(worktreePath) {
+  const gitCommonDir = (0, import_node_child_process3.execFileSync)(
+    "git",
+    ["-C", worktreePath, "rev-parse", "--git-common-dir"],
+    { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }
+  ).trim();
+  const abs = (0, import_node_path4.resolve)(worktreePath, gitCommonDir);
+  return abs.endsWith("/.git") ? abs.slice(0, -5) : abs;
+}
+function saveBackup(root = null) {
+  const worktrees = discoverWorktrees(root);
+  const entries = worktrees.map((wt) => {
+    let repoRoot = null;
+    try {
+      repoRoot = resolveRepoRoot2(wt.path);
+    } catch {
+    }
+    return {
+      repo: wt.repo,
+      name: wt.name,
+      branch: wt.branch,
+      path: wt.path,
+      repoRoot
+    };
+  });
+  (0, import_node_fs3.mkdirSync)(BACKUP_DIR, { recursive: true });
+  const backup = {
+    created: (/* @__PURE__ */ new Date()).toISOString(),
+    worktreesRoot: root ?? process.env.GWT_WORKTREES_ROOT ?? (0, import_node_path4.join)((0, import_node_os4.homedir)(), "worktrees"),
+    entries
+  };
+  (0, import_node_fs3.writeFileSync)(BACKUP_FILE, JSON.stringify(backup, null, 2), "utf8");
+  return backup;
+}
+function restoreBackup(backupFile = BACKUP_FILE) {
+  if (!(0, import_node_fs3.existsSync)(backupFile)) {
+    throw new Error(`No backup found at ${backupFile}`);
+  }
+  const backup = JSON.parse((0, import_node_fs3.readFileSync)(backupFile, "utf8"));
+  const log = [];
+  let restored = 0;
+  let skipped = 0;
+  let failed = 0;
+  for (const entry of backup.entries) {
+    if ((0, import_node_fs3.existsSync)(entry.path)) {
+      log.push({ status: "skipped", entry, reason: "directory already exists" });
+      skipped++;
+      continue;
+    }
+    if (!entry.repoRoot || !(0, import_node_fs3.existsSync)(entry.repoRoot)) {
+      log.push({ status: "failed", entry, reason: `repo root not found: ${entry.repoRoot}` });
+      failed++;
+      continue;
+    }
+    (0, import_node_fs3.mkdirSync)((0, import_node_path4.join)(entry.path, ".."), { recursive: true });
+    const branchExists = (() => {
+      try {
+        (0, import_node_child_process3.execFileSync)(
+          "git",
+          ["-C", entry.repoRoot, "show-ref", "--verify", "--quiet", `refs/heads/${entry.branch}`],
+          { stdio: "ignore" }
+        );
+        return true;
+      } catch {
+        return false;
+      }
+    })();
+    try {
+      if (branchExists) {
+        (0, import_node_child_process3.execFileSync)(
+          "git",
+          ["-C", entry.repoRoot, "worktree", "add", entry.path, entry.branch],
+          { stdio: "ignore" }
+        );
+      } else {
+        (0, import_node_child_process3.execFileSync)(
+          "git",
+          ["-C", entry.repoRoot, "worktree", "add", "-b", entry.branch, entry.path, "origin/master"],
+          { stdio: "ignore" }
+        );
+      }
+      log.push({ status: "restored", entry, branchExisted: branchExists });
+      restored++;
+    } catch (err) {
+      log.push({ status: "failed", entry, reason: err.message });
+      failed++;
+    }
+  }
+  return { restored, skipped, failed, log, backup };
+}
+
 // bin/gwt.js
-var argv = yargs_default(hideBin(process.argv)).scriptName("gwt").usage("$0 [options]", "Interactively browse and manage git worktrees").option("root", {
+yargs_default(hideBin(process.argv)).scriptName("gwt").option("root", {
   type: "string",
-  description: "Root directory containing worktrees (default: ~/worktrees)"
-}).help().version().parse();
-var root = argv.root ?? null;
-runInteractive({ root }).catch((err) => {
-  console.error(err.message ?? err);
-  process.exit(1);
-});
+  description: "Root directory containing worktrees (default: ~/worktrees)",
+  global: true
+}).command(
+  "$0",
+  "Interactively browse and manage git worktrees",
+  () => {
+  },
+  (argv) => {
+    runInteractive({ root: argv.root ?? null }).catch((err) => {
+      console.error(err.message ?? err);
+      process.exit(1);
+    });
+  }
+).command(
+  "backup",
+  `Snapshot all worktrees to ${BACKUP_FILE}`,
+  (y) => y.option("root", {
+    type: "string",
+    description: "Override worktrees root"
+  }),
+  (argv) => {
+    try {
+      const backup = saveBackup(argv.root ?? null);
+      console.log(`Backed up ${backup.entries.length} worktree${backup.entries.length !== 1 ? "s" : ""} to ${BACKUP_FILE}`);
+      for (const e of backup.entries) {
+        console.log(`  ${e.repo ? `${e.repo} / ` : ""}${e.name}  (${e.branch})`);
+      }
+    } catch (err) {
+      console.error(`Backup failed: ${err.message}`);
+      process.exit(1);
+    }
+  }
+).command(
+  "restore",
+  `Recreate missing worktrees from ${BACKUP_FILE}`,
+  (y) => y.option("file", {
+    type: "string",
+    description: "Path to backup file",
+    default: BACKUP_FILE
+  }),
+  (argv) => {
+    try {
+      const { restored, skipped, failed, log, backup } = restoreBackup(argv.file);
+      console.log(`Backup from ${backup.created}`);
+      console.log(`${backup.entries.length} entries \u2014 ${restored} restored, ${skipped} skipped, ${failed} failed
+`);
+      for (const item of log) {
+        const label = `${item.entry.repo ? `${item.entry.repo} / ` : ""}${item.entry.name}`;
+        if (item.status === "restored") {
+          console.log(`  \u2713 ${label}${item.branchExisted ? "" : " (branch recreated from origin/master)"}`);
+        } else if (item.status === "skipped") {
+          console.log(`  \u2013 ${label}  (${item.reason})`);
+        } else {
+          console.error(`  \u2717 ${label}  ${item.reason}`);
+        }
+      }
+      if (failed > 0) process.exit(1);
+    } catch (err) {
+      console.error(`Restore failed: ${err.message}`);
+      process.exit(1);
+    }
+  }
+).help().version().parse();
 /*! Bundled license information:
 
 yargs-parser/build/lib/string-utils.js:
