@@ -1,0 +1,22 @@
+{
+  "name": "gwt",
+  "version": "1.0.0",
+  "description": "Interactive git worktree manager",
+  "type": "module",
+  "bin": {
+    "gwt": "./dist/gwt.cjs"
+  },
+  "scripts": {
+    "build": "esbuild bin/gwt.js --bundle --platform=node --format=cjs --outfile=dist/gwt.cjs",
+    "dev": "node bin/gwt.js"
+  },
+  "devDependencies": {
+    "@inquirer/prompts": "^7.0.0",
+    "chalk": "^6.0.0",
+    "esbuild": "^0.25.0",
+    "yargs": "^17.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
