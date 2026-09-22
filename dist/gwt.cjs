@@ -19675,15 +19675,48 @@ function saveBackup(root = null, outputFile = BACKUP_FILE) {
   (0, import_node_fs3.writeFileSync)(outputFile, JSON.stringify(backup, null, 2), "utf8");
   return backup;
 }
+function git(repoRoot, args) {
+  return (0, import_node_child_process3.execFileSync)("git", ["-C", repoRoot, ...args], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"]
+  }).trim();
+}
+function refExists(repoRoot, ref) {
+  try {
+    git(repoRoot, ["show-ref", "--verify", "--quiet", ref]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+function defaultRemoteBranch(repoRoot) {
+  try {
+    return git(repoRoot, ["symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD"]);
+  } catch {
+    for (const candidate of ["main", "master"]) {
+      if (refExists(repoRoot, `refs/remotes/origin/${candidate}`)) return `origin/${candidate}`;
+    }
+    return null;
+  }
+}
+function gitErrorMessage(err) {
+  const lines = (err.stderr?.toString().trim() || err.message).split("\n");
+  return lines.find((line) => line.startsWith("fatal:")) ?? lines[0];
+}
 function restoreBackup(backupFile = BACKUP_FILE) {
   if (!(0, import_node_fs3.existsSync)(backupFile)) {
     throw new Error(`No backup found at ${backupFile}`);
   }
   const backup = JSON.parse((0, import_node_fs3.readFileSync)(backupFile, "utf8"));
   const log = [];
+  const fetchErrors = /* @__PURE__ */ new Map();
   let restored = 0;
   let skipped = 0;
   let failed = 0;
+  const fail = (entry, reason) => {
+    log.push({ status: "failed", entry, reason });
+    failed++;
+  };
   for (const entry of backup.entries) {
     if ((0, import_node_fs3.existsSync)(entry.path)) {
       log.push({ status: "skipped", entry, reason: "directory already exists" });
@@ -19691,42 +19724,49 @@ function restoreBackup(backupFile = BACKUP_FILE) {
       continue;
     }
     if (!entry.repoRoot || !(0, import_node_fs3.existsSync)(entry.repoRoot)) {
-      log.push({ status: "failed", entry, reason: `repo root not found: ${entry.repoRoot}` });
-      failed++;
+      fail(entry, `repo root not found: ${entry.repoRoot}`);
       continue;
     }
-    (0, import_node_fs3.mkdirSync)((0, import_node_path4.join)(entry.path, ".."), { recursive: true });
-    const branchExists = (() => {
+    if (!entry.branch || entry.branch === "unknown" || entry.branch === "HEAD") {
+      fail(entry, "no branch recorded in backup");
+      continue;
+    }
+    if (!fetchErrors.has(entry.repoRoot)) {
       try {
-        (0, import_node_child_process3.execFileSync)(
-          "git",
-          ["-C", entry.repoRoot, "show-ref", "--verify", "--quiet", `refs/heads/${entry.branch}`],
-          { stdio: "ignore" }
-        );
-        return true;
-      } catch {
-        return false;
+        git(entry.repoRoot, ["fetch", "--quiet", "origin"]);
+        fetchErrors.set(entry.repoRoot, null);
+      } catch (err) {
+        fetchErrors.set(entry.repoRoot, gitErrorMessage(err));
       }
-    })();
+    }
+    const fetchError = fetchErrors.get(entry.repoRoot);
+    let args;
+    let source;
+    if (refExists(entry.repoRoot, `refs/heads/${entry.branch}`)) {
+      args = ["worktree", "add", entry.path, entry.branch];
+      source = "local";
+    } else if (refExists(entry.repoRoot, `refs/remotes/origin/${entry.branch}`)) {
+      args = ["worktree", "add", "--track", "-b", entry.branch, entry.path, `origin/${entry.branch}`];
+      source = "remote";
+    } else if (fetchError) {
+      fail(entry, `could not fetch origin, refusing to create a new branch: ${fetchError}`);
+      continue;
+    } else {
+      const base = defaultRemoteBranch(entry.repoRoot);
+      if (!base) {
+        fail(entry, "branch not found locally or on origin, and no origin default branch to start from");
+        continue;
+      }
+      args = ["worktree", "add", "--no-track", "-b", entry.branch, entry.path, base];
+      source = base;
+    }
+    (0, import_node_fs3.mkdirSync)((0, import_node_path4.join)(entry.path, ".."), { recursive: true });
     try {
-      if (branchExists) {
-        (0, import_node_child_process3.execFileSync)(
-          "git",
-          ["-C", entry.repoRoot, "worktree", "add", entry.path, entry.branch],
-          { stdio: "ignore" }
-        );
-      } else {
-        (0, import_node_child_process3.execFileSync)(
-          "git",
-          ["-C", entry.repoRoot, "worktree", "add", "-b", entry.branch, entry.path, "origin/master"],
-          { stdio: "ignore" }
-        );
-      }
-      log.push({ status: "restored", entry, branchExisted: branchExists });
+      git(entry.repoRoot, args);
+      log.push({ status: "restored", entry, source });
       restored++;
     } catch (err) {
-      log.push({ status: "failed", entry, reason: err.message });
-      failed++;
+      fail(entry, gitErrorMessage(err));
     }
   }
   return { restored, skipped, failed, log, backup };
@@ -19785,7 +19825,11 @@ yargs_default(hideBin(process.argv)).scriptName("gwt").option("root", {
       for (const item of log) {
         const label = `${item.entry.repo ? `${item.entry.repo} / ` : ""}${item.entry.name}`;
         if (item.status === "restored") {
-          console.log(`  \u2713 ${label}${item.branchExisted ? "" : " (branch recreated from origin/master)"}`);
+          const note = {
+            local: "",
+            remote: ` (tracking origin/${item.entry.branch})`
+          }[item.source] ?? ` (new branch from ${item.source})`;
+          console.log(`  \u2713 ${label}${note}`);
         } else if (item.status === "skipped") {
           console.log(`  \u2013 ${label}  (${item.reason})`);
         } else {

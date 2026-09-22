@@ -68,7 +68,11 @@ yargs(hideBin(process.argv))
         for (const item of log) {
           const label = `${item.entry.repo ? `${item.entry.repo} / ` : ''}${item.entry.name}`;
           if (item.status === 'restored') {
-            console.log(`  ✓ ${label}${item.branchExisted ? '' : ' (branch recreated from origin/master)'}`);
+            const note = {
+              local: '',
+              remote: ` (tracking origin/${item.entry.branch})`,
+            }[item.source] ?? ` (new branch from ${item.source})`;
+            console.log(`  ✓ ${label}${note}`);
           } else if (item.status === 'skipped') {
             console.log(`  – ${label}  (${item.reason})`);
           } else {

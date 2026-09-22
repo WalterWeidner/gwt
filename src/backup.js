@@ -52,13 +52,49 @@ export function saveBackup(root = null, outputFile = BACKUP_FILE) {
   return backup;
 }
 
+function git(repoRoot, args) {
+  return execFileSync('git', ['-C', repoRoot, ...args], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  }).trim();
+}
+
+function refExists(repoRoot, ref) {
+  try {
+    git(repoRoot, ['show-ref', '--verify', '--quiet', ref]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function defaultRemoteBranch(repoRoot) {
+  try {
+    return git(repoRoot, ['symbolic-ref', '--quiet', '--short', 'refs/remotes/origin/HEAD']);
+  } catch {
+    for (const candidate of ['main', 'master']) {
+      if (refExists(repoRoot, `refs/remotes/origin/${candidate}`)) return `origin/${candidate}`;
+    }
+    return null;
+  }
+}
+
+function gitErrorMessage(err) {
+  const lines = (err.stderr?.toString().trim() || err.message).split('\n');
+  return lines.find((line) => line.startsWith('fatal:')) ?? lines[0];
+}
+
 /**
  * Read the backup file and attempt to recreate any missing worktrees.
  *
- * For each entry in the backup:
+ * Each repo is fetched once, then for each entry in the backup:
  *   - Skip if the worktree directory already exists.
- *   - If the branch exists in the repo: git worktree add <path> <branch>
- *   - If the branch is gone:            git worktree add -b <branch> <path> origin/master
+ *   - Local branch exists:      git worktree add <path> <branch>
+ *   - Only origin has it:       git worktree add --track -b <branch> <path> origin/<branch>
+ *   - Branch exists nowhere:    git worktree add --no-track -b <branch> <path> <origin default branch>
+ *
+ * New branches are never created for a repo whose fetch failed, since the
+ * branch may exist on origin and would otherwise be shadowed by an empty one.
  *
  * Returns { restored, skipped, failed } counts and a log of actions.
  */
@@ -69,9 +105,15 @@ export function restoreBackup(backupFile = BACKUP_FILE) {
 
   const backup = JSON.parse(readFileSync(backupFile, 'utf8'));
   const log = [];
+  const fetchErrors = new Map();
   let restored = 0;
   let skipped = 0;
   let failed = 0;
+
+  const fail = (entry, reason) => {
+    log.push({ status: 'failed', entry, reason });
+    failed++;
+  };
 
   for (const entry of backup.entries) {
     if (existsSync(entry.path)) {
@@ -81,47 +123,54 @@ export function restoreBackup(backupFile = BACKUP_FILE) {
     }
 
     if (!entry.repoRoot || !existsSync(entry.repoRoot)) {
-      log.push({ status: 'failed', entry, reason: `repo root not found: ${entry.repoRoot}` });
-      failed++;
+      fail(entry, `repo root not found: ${entry.repoRoot}`);
       continue;
     }
 
-    // Ensure the parent worktrees/<repo>/ directory exists
+    if (!entry.branch || entry.branch === 'unknown' || entry.branch === 'HEAD') {
+      fail(entry, 'no branch recorded in backup');
+      continue;
+    }
+
+    if (!fetchErrors.has(entry.repoRoot)) {
+      try {
+        git(entry.repoRoot, ['fetch', '--quiet', 'origin']);
+        fetchErrors.set(entry.repoRoot, null);
+      } catch (err) {
+        fetchErrors.set(entry.repoRoot, gitErrorMessage(err));
+      }
+    }
+    const fetchError = fetchErrors.get(entry.repoRoot);
+
+    let args;
+    let source;
+    if (refExists(entry.repoRoot, `refs/heads/${entry.branch}`)) {
+      args = ['worktree', 'add', entry.path, entry.branch];
+      source = 'local';
+    } else if (refExists(entry.repoRoot, `refs/remotes/origin/${entry.branch}`)) {
+      args = ['worktree', 'add', '--track', '-b', entry.branch, entry.path, `origin/${entry.branch}`];
+      source = 'remote';
+    } else if (fetchError) {
+      fail(entry, `could not fetch origin, refusing to create a new branch: ${fetchError}`);
+      continue;
+    } else {
+      const base = defaultRemoteBranch(entry.repoRoot);
+      if (!base) {
+        fail(entry, 'branch not found locally or on origin, and no origin default branch to start from');
+        continue;
+      }
+      args = ['worktree', 'add', '--no-track', '-b', entry.branch, entry.path, base];
+      source = base;
+    }
+
     mkdirSync(join(entry.path, '..'), { recursive: true });
 
-    // Check if the branch still exists in the repo
-    const branchExists = (() => {
-      try {
-        execFileSync(
-          'git',
-          ['-C', entry.repoRoot, 'show-ref', '--verify', '--quiet', `refs/heads/${entry.branch}`],
-          { stdio: 'ignore' }
-        );
-        return true;
-      } catch {
-        return false;
-      }
-    })();
-
     try {
-      if (branchExists) {
-        execFileSync(
-          'git',
-          ['-C', entry.repoRoot, 'worktree', 'add', entry.path, entry.branch],
-          { stdio: 'ignore' }
-        );
-      } else {
-        execFileSync(
-          'git',
-          ['-C', entry.repoRoot, 'worktree', 'add', '-b', entry.branch, entry.path, 'origin/master'],
-          { stdio: 'ignore' }
-        );
-      }
-      log.push({ status: 'restored', entry, branchExisted: branchExists });
+      git(entry.repoRoot, args);
+      log.push({ status: 'restored', entry, source });
       restored++;
     } catch (err) {
-      log.push({ status: 'failed', entry, reason: err.message });
-      failed++;
+      fail(entry, gitErrorMessage(err));
     }
   }
 
