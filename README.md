@@ -33,6 +33,8 @@ Type to filter, arrow keys to navigate, enter to select.
 - **Switch to directory** — `cd`s your shell into the worktree
 - **Delete Worktree** — confirm → remove → optional branch delete
 
+The Cursor actions need the `cursor` command (in Cursor, run **Shell Command: Install 'cursor' command** from the Command Palette), and the Claude Code action needs `claude`. gwt looks for each on your `PATH` and in its usual install location, and tells you how to install it if it's missing. Set `GWT_CURSOR_BIN` or `GWT_CLAUDE_BIN` to point at a specific binary.
+
 ### Options
 
 | Flag | Description |

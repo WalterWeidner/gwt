@@ -1,16 +1,60 @@
 import { execFileSync, spawnSync, spawn } from 'node:child_process';
-import { writeFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { accessSync, constants, writeFileSync } from 'node:fs';
+import { delimiter, join, resolve } from 'node:path';
+import { homedir } from 'node:os';
 import { confirm } from '@inquirer/prompts';
 
-const CURSOR_BIN = join(process.env.HOME, '.local', 'bin', 'cursor');
-const CLAUDE_BIN = join(process.env.HOME, '.local', 'bin', 'claude');
+const COMMANDS = {
+  cursor: {
+    envVar: 'GWT_CURSOR_BIN',
+    fallbacks: [
+      join(homedir(), '.local', 'bin', 'cursor'),
+      '/usr/local/bin/cursor',
+      '/Applications/Cursor.app/Contents/Resources/app/bin/cursor',
+    ],
+    install: `Open Cursor and run "Shell Command: Install 'cursor' command" from the Command Palette.`,
+  },
+  claude: {
+    envVar: 'GWT_CLAUDE_BIN',
+    fallbacks: [join(homedir(), '.local', 'bin', 'claude')],
+    install: 'Install Claude Code and make sure `claude` is on your PATH.',
+  },
+};
+
+function isExecutable(file) {
+  try {
+    accessSync(file, constants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Locate a CLI via its override env var, then PATH, then known install
+ * locations. Throws with install instructions when it can't be found, since
+ * a detached spawn of a missing binary fails silently after gwt exits.
+ */
+function findCommand(name) {
+  const { envVar, fallbacks, install } = COMMANDS[name];
+  const override = process.env[envVar];
+  if (override) {
+    if (isExecutable(override)) return override;
+    throw new Error(`${envVar} is set to "${override}", but that file is not executable.`);
+  }
+
+  const pathDirs = (process.env.PATH ?? '').split(delimiter).filter(Boolean);
+  const found = [...pathDirs.map((dir) => join(dir, name)), ...fallbacks].find(isExecutable);
+  if (found) return found;
+
+  throw new Error(`Could not find the \`${name}\` command. ${install}`);
+}
 
 /**
  * Open a worktree in Cursor's classic editor view (no Glass/agent mode).
  */
 export function openInCursor(worktree) {
-  const child = spawn(CURSOR_BIN, ['--classic', worktree.path], {
+  const child = spawn(findCommand('cursor'), ['--classic', worktree.path], {
     detached: true,
     stdio: 'ignore',
   });
@@ -21,7 +65,7 @@ export function openInCursor(worktree) {
  * Open a worktree in Cursor's agent/Glass view (default cursor behaviour).
  */
 export function openInCursorAgent(worktree) {
-  const child = spawn(CURSOR_BIN, [worktree.path], {
+  const child = spawn(findCommand('cursor'), [worktree.path], {
     detached: true,
     stdio: 'ignore',
   });
@@ -33,7 +77,7 @@ export function openInCursorAgent(worktree) {
  * Blocks until the user exits Claude Code, then returns control to gwt.
  */
 export function openInClaudeCode(worktree) {
-  spawnSync(CLAUDE_BIN, [], {
+  spawnSync(findCommand('claude'), [], {
     cwd: worktree.path,
     stdio: 'inherit',
   });

@@ -18769,24 +18769,59 @@ function discoverWorktrees(root = null) {
 var import_node_child_process2 = require("node:child_process");
 var import_node_fs2 = require("node:fs");
 var import_node_path3 = require("node:path");
-var CURSOR_BIN = (0, import_node_path3.join)(process.env.HOME, ".local", "bin", "cursor");
-var CLAUDE_BIN = (0, import_node_path3.join)(process.env.HOME, ".local", "bin", "claude");
+var import_node_os3 = require("node:os");
+var COMMANDS = {
+  cursor: {
+    envVar: "GWT_CURSOR_BIN",
+    fallbacks: [
+      (0, import_node_path3.join)((0, import_node_os3.homedir)(), ".local", "bin", "cursor"),
+      "/usr/local/bin/cursor",
+      "/Applications/Cursor.app/Contents/Resources/app/bin/cursor"
+    ],
+    install: `Open Cursor and run "Shell Command: Install 'cursor' command" from the Command Palette.`
+  },
+  claude: {
+    envVar: "GWT_CLAUDE_BIN",
+    fallbacks: [(0, import_node_path3.join)((0, import_node_os3.homedir)(), ".local", "bin", "claude")],
+    install: "Install Claude Code and make sure `claude` is on your PATH."
+  }
+};
+function isExecutable(file) {
+  try {
+    (0, import_node_fs2.accessSync)(file, import_node_fs2.constants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+function findCommand(name) {
+  const { envVar, fallbacks, install } = COMMANDS[name];
+  const override = process.env[envVar];
+  if (override) {
+    if (isExecutable(override)) return override;
+    throw new Error(`${envVar} is set to "${override}", but that file is not executable.`);
+  }
+  const pathDirs = (process.env.PATH ?? "").split(import_node_path3.delimiter).filter(Boolean);
+  const found = [...pathDirs.map((dir) => (0, import_node_path3.join)(dir, name)), ...fallbacks].find(isExecutable);
+  if (found) return found;
+  throw new Error(`Could not find the \`${name}\` command. ${install}`);
+}
 function openInCursor(worktree) {
-  const child = (0, import_node_child_process2.spawn)(CURSOR_BIN, ["--classic", worktree.path], {
+  const child = (0, import_node_child_process2.spawn)(findCommand("cursor"), ["--classic", worktree.path], {
     detached: true,
     stdio: "ignore"
   });
   child.unref();
 }
 function openInCursorAgent(worktree) {
-  const child = (0, import_node_child_process2.spawn)(CURSOR_BIN, [worktree.path], {
+  const child = (0, import_node_child_process2.spawn)(findCommand("cursor"), [worktree.path], {
     detached: true,
     stdio: "ignore"
   });
   child.unref();
 }
 function openInClaudeCode(worktree) {
-  (0, import_node_child_process2.spawnSync)(CLAUDE_BIN, [], {
+  (0, import_node_child_process2.spawnSync)(findCommand("claude"), [], {
     cwd: worktree.path,
     stdio: "inherit"
   });
@@ -19140,7 +19175,7 @@ var ansi_styles_default = ansiStyles;
 
 // node_modules/chalk/source/vendor/supports-color/index.js
 var import_node_process2 = __toESM(require("node:process"), 1);
-var import_node_os3 = __toESM(require("node:os"), 1);
+var import_node_os4 = __toESM(require("node:os"), 1);
 var import_node_tty = __toESM(require("node:tty"), 1);
 function hasFlag(flag, argv = globalThis.Deno ? globalThis.Deno.args : import_node_process2.default.argv) {
   const prefix = flag.startsWith("-") ? "" : flag.length === 1 ? "-" : "--";
@@ -19215,7 +19250,7 @@ function _supportsColor(haveStream, { streamIsTTY, sniffFlags = true } = {}) {
     return min;
   }
   if (import_node_process2.default.platform === "win32") {
-    const osRelease = import_node_os3.default.release().split(".");
+    const osRelease = import_node_os4.default.release().split(".");
     if (Number(osRelease[0]) >= 10 && Number(osRelease[2]) >= 10586) {
       return Number(osRelease[2]) >= 14931 ? 3 : 2;
     }
@@ -19638,8 +19673,8 @@ async function runInteractive({ root = null } = {}) {
 var import_node_child_process3 = require("node:child_process");
 var import_node_fs3 = require("node:fs");
 var import_node_path4 = require("node:path");
-var import_node_os4 = require("node:os");
-var BACKUP_DIR = (0, import_node_path4.join)((0, import_node_os4.homedir)(), ".gwt");
+var import_node_os5 = require("node:os");
+var BACKUP_DIR = (0, import_node_path4.join)((0, import_node_os5.homedir)(), ".gwt");
 var BACKUP_FILE = (0, import_node_path4.join)(BACKUP_DIR, "backup.json");
 function resolveRepoRoot2(worktreePath) {
   const gitCommonDir = (0, import_node_child_process3.execFileSync)(
@@ -19669,7 +19704,7 @@ function saveBackup(root = null, outputFile = BACKUP_FILE) {
   (0, import_node_fs3.mkdirSync)(BACKUP_DIR, { recursive: true });
   const backup = {
     created: (/* @__PURE__ */ new Date()).toISOString(),
-    worktreesRoot: root ?? process.env.GWT_WORKTREES_ROOT ?? (0, import_node_path4.join)((0, import_node_os4.homedir)(), "worktrees"),
+    worktreesRoot: root ?? process.env.GWT_WORKTREES_ROOT ?? (0, import_node_path4.join)((0, import_node_os5.homedir)(), "worktrees"),
     entries
   };
   (0, import_node_fs3.writeFileSync)(outputFile, JSON.stringify(backup, null, 2), "utf8");
