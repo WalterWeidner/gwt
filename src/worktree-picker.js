@@ -117,7 +117,7 @@ function renderWorktreeItem(wt, isActive, jiraUrl) {
     parts.push(jiraHyperlink(ticketId, jiraUrl));
   }
 
-  const detailLine = `      ${parts.join(chalk.dim('  ·  '))}`;
+  const detailLine = `    ${parts.join(chalk.dim('  ·  '))}`;
 
   return `${titleLine}\n${detailLine}\n`;
 }

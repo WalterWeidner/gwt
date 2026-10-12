@@ -19570,7 +19570,7 @@ function renderWorktreeItem(wt, isActive, jiraUrl) {
   if (ticketId) {
     parts.push(jiraHyperlink(ticketId, jiraUrl));
   }
-  const detailLine = `      ${parts.join(source_default.dim("  \xB7  "))}`;
+  const detailLine = `    ${parts.join(source_default.dim("  \xB7  "))}`;
   return `${titleLine}
 ${detailLine}
 `;
