@@ -18728,6 +18728,25 @@ function resolveBranch(worktreePath) {
     return "unknown";
   }
 }
+function resolveLastCommitAt(worktreePath) {
+  try {
+    const ts = (0, import_node_child_process.execFileSync)(
+      "git",
+      ["-C", worktreePath, "log", "-1", "--format=%ct"],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }
+    ).trim();
+    return ts ? new Date(parseInt(ts, 10) * 1e3) : null;
+  } catch {
+    return null;
+  }
+}
+function resolveCreatedAt(worktreePath) {
+  try {
+    return (0, import_node_fs.statSync)(worktreePath).birthtime;
+  } catch {
+    return null;
+  }
+}
 function isWorktree(p) {
   return (0, import_node_fs.existsSync)((0, import_node_path2.join)(p, ".git"));
 }
@@ -18735,8 +18754,10 @@ function describeWorktree(worktreePath, repo) {
   const name = (0, import_node_path2.basename)(worktreePath);
   const branch = resolveBranch(worktreePath);
   const branchDiffers = branch !== name && branch !== "unknown";
+  const lastCommitAt = resolveLastCommitAt(worktreePath);
+  const createdAt = resolveCreatedAt(worktreePath);
   const label = repo ? `${repo} / ${name}${branchDiffers ? ` (branch: ${branch})` : ""}` : `${name}${branchDiffers ? ` (branch: ${branch})` : ""}`;
-  return { repo, name, path: worktreePath, branch, branchDiffers, label };
+  return { repo, name, path: worktreePath, branch, branchDiffers, label, lastCommitAt, createdAt };
 }
 function discoverWorktrees(root = null) {
   const rootDir = root ?? process.env.GWT_WORKTREES_ROOT ?? DEFAULT_ROOT;
@@ -19483,18 +19504,115 @@ var chalk = createChalk();
 var chalkStderr = createChalk({ level: stderrColor ? stderrColor.level : 0 });
 var source_default = chalk;
 
+// src/config.js
+var import_node_fs3 = require("node:fs");
+var import_node_path4 = require("node:path");
+var import_node_os5 = require("node:os");
+var CONFIG_PATH = (0, import_node_path4.join)((0, import_node_os5.homedir)(), ".gwt", "config.json");
+var _config = null;
+function loadConfig() {
+  if (_config) return _config;
+  _config = {};
+  if ((0, import_node_fs3.existsSync)(CONFIG_PATH)) {
+    try {
+      Object.assign(_config, JSON.parse((0, import_node_fs3.readFileSync)(CONFIG_PATH, "utf8")));
+    } catch {
+    }
+  }
+  if (process.env.GWT_JIRA_URL) {
+    _config.jiraUrl = process.env.GWT_JIRA_URL;
+  }
+  return _config;
+}
+
 // src/worktree-picker.js
-var PAGE_SIZE = 12;
+var PAGE_SIZE = 30;
+function reltime(date) {
+  if (!date) return "";
+  const s = Math.floor((Date.now() - date.getTime()) / 1e3);
+  if (s < 60) return "just now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d}d`;
+  const w = Math.floor(d / 7);
+  if (w < 5) return `${w}w`;
+  const mo = Math.floor(d / 30);
+  if (mo < 12) return `${mo}mo`;
+  return `${Math.floor(d / 365)}y`;
+}
+function jiraHyperlink(ticketId, jiraUrl) {
+  if (!ticketId) return "";
+  if (!jiraUrl) return ticketId;
+  const url = `${jiraUrl.replace(/\/$/, "")}/browse/${ticketId}`;
+  return `\x1B]8;;${url}\x07${ticketId}\x1B]8;;\x07`;
+}
+function parseName(name) {
+  const match = name.match(/^([A-Za-z]+-\d+)[_-](.+)$/);
+  if (match) {
+    return {
+      ticketId: match[1],
+      description: match[2].replace(/([A-Z])/g, " $1").trim()
+    };
+  }
+  return { ticketId: null, description: name };
+}
+function renderWorktreeItem(wt, isActive, jiraUrl) {
+  const { ticketId, description } = parseName(wt.name);
+  const titleLine = isActive ? `  ${source_default.cyan("\u276F")} ${source_default.cyan.bold(description)}` : `    ${source_default.bold(description)}`;
+  const parts = [source_default.dim(`\u2387  ${wt.branch}`)];
+  if (ticketId) {
+    const link = jiraHyperlink(ticketId, jiraUrl);
+    parts.push(source_default.dim(link));
+  }
+  const updated = reltime(wt.lastCommitAt);
+  const created = reltime(wt.createdAt);
+  if (updated) parts.push(source_default.dim(updated));
+  if (created && wt.createdAt && wt.lastCommitAt && wt.lastCommitAt - wt.createdAt > 864e5) {
+    parts.push(source_default.dim(`\u2726 ${created}`));
+  } else if (created && (!wt.lastCommitAt || !wt.createdAt)) {
+    parts.push(source_default.dim(`\u2726 ${created}`));
+  }
+  const detailLine = `      ${parts.join(source_default.dim("  \xB7  "))}`;
+  return `${titleLine}
+${detailLine}
+`;
+}
+function buildGroupedList(worktrees) {
+  const groups = /* @__PURE__ */ new Map();
+  for (const wt of worktrees) {
+    const repo = wt.repo || "(ungrouped)";
+    if (!groups.has(repo)) groups.set(repo, []);
+    groups.get(repo).push(wt);
+  }
+  const display = [];
+  let wtIndex = 0;
+  for (const [repo, wts] of groups) {
+    display.push({ type: "header", repo });
+    for (const wt of wts) {
+      display.push({ type: "item", wt, wtIndex: wtIndex++ });
+    }
+  }
+  return display;
+}
 var worktreePicker = createPrompt((config, done) => {
   const [query, setQuery] = useState("");
   const [cursor, setCursor] = useState(0);
   const [status, setStatus] = useState("pending");
   const prefix = usePrefix({ status });
+  const cfg = loadConfig();
+  const jiraUrl = config.jiraUrl ?? cfg.jiraUrl ?? null;
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
     return config.worktrees.filter((wt) => wt.label.toLowerCase().includes(q));
   }, [query]);
   const safeCursor = Math.min(cursor, Math.max(0, filtered.length - 1));
+  const grouped = useMemo(() => buildGroupedList(filtered), [filtered]);
+  const activeDisplayIndex = grouped.findIndex(
+    (g) => g.type === "item" && g.wtIndex === safeCursor
+  );
   useKeypress((key) => {
     if (status !== "pending") return;
     if (key.sequence === "") {
@@ -19517,8 +19635,7 @@ var worktreePicker = createPrompt((config, done) => {
       return;
     }
     if (isBackspaceKey(key)) {
-      const next = query.slice(0, -1);
-      setQuery(next);
+      setQuery(query.slice(0, -1));
       setCursor(0);
       return;
     }
@@ -19528,11 +19645,14 @@ var worktreePicker = createPrompt((config, done) => {
     }
   });
   const page = usePagination({
-    items: filtered,
-    active: safeCursor,
+    items: grouped,
+    active: activeDisplayIndex === -1 ? 0 : activeDisplayIndex,
     renderItem: ({ item, isActive }) => {
-      const line = isActive ? `${source_default.cyan("\u276F")} ${source_default.cyan(item.label)}` : `  ${item.label}`;
-      return line;
+      if (item.type === "header") {
+        return source_default.dim.bold(`
+  ${item.repo}`);
+      }
+      return renderWorktreeItem(item.wt, isActive, jiraUrl);
     },
     pageSize: PAGE_SIZE,
     loop: false
@@ -19540,11 +19660,8 @@ var worktreePicker = createPrompt((config, done) => {
   const searchLine = `${prefix} Select a worktree: ${source_default.dim(query)}${source_default.white("\u2588")}`;
   const emptyLine = filtered.length === 0 ? source_default.dim("  (no matches)") : null;
   const sep = source_default.gray("+");
-  const footer = source_default.dim(
-    `  \u2191\u2193 navigate  enter select  ctrl${sep}- selection mode`
-  );
-  const lines = [searchLine, emptyLine ?? page, footer];
-  return lines.filter(Boolean).join("\n");
+  const footer = source_default.dim(`  \u2191\u2193 navigate  enter select  ctrl${sep}- selection mode`);
+  return [searchLine, emptyLine ?? page, footer].filter(Boolean).join("\n");
 });
 
 // src/interactive.js
@@ -19598,7 +19715,7 @@ async function runBulkDelete(worktrees) {
   console.log(`
 Deleted ${deleted} of ${selected.length} worktree${selected.length > 1 ? "s" : ""}.`);
 }
-async function runInteractive({ root = null } = {}) {
+async function runInteractive({ root = null, jiraUrl = null } = {}) {
   while (true) {
     const worktrees = discoverWorktrees(root);
     if (worktrees.length === 0) {
@@ -19608,7 +19725,7 @@ async function runInteractive({ root = null } = {}) {
     }
     let pickerResult;
     try {
-      pickerResult = await worktreePicker({ worktrees });
+      pickerResult = await worktreePicker({ worktrees, jiraUrl });
     } catch (err) {
       if (err.name === "ExitPromptError") {
         process.exit(0);
@@ -19671,18 +19788,18 @@ async function runInteractive({ root = null } = {}) {
 
 // src/backup.js
 var import_node_child_process3 = require("node:child_process");
-var import_node_fs3 = require("node:fs");
-var import_node_path4 = require("node:path");
-var import_node_os5 = require("node:os");
-var BACKUP_DIR = (0, import_node_path4.join)((0, import_node_os5.homedir)(), ".gwt");
-var BACKUP_FILE = (0, import_node_path4.join)(BACKUP_DIR, "backup.json");
+var import_node_fs4 = require("node:fs");
+var import_node_path5 = require("node:path");
+var import_node_os6 = require("node:os");
+var BACKUP_DIR = (0, import_node_path5.join)((0, import_node_os6.homedir)(), ".gwt");
+var BACKUP_FILE = (0, import_node_path5.join)(BACKUP_DIR, "backup.json");
 function resolveRepoRoot2(worktreePath) {
   const gitCommonDir = (0, import_node_child_process3.execFileSync)(
     "git",
     ["-C", worktreePath, "rev-parse", "--git-common-dir"],
     { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }
   ).trim();
-  const abs = (0, import_node_path4.resolve)(worktreePath, gitCommonDir);
+  const abs = (0, import_node_path5.resolve)(worktreePath, gitCommonDir);
   return abs.endsWith("/.git") ? abs.slice(0, -5) : abs;
 }
 function saveBackup(root = null, outputFile = BACKUP_FILE) {
@@ -19701,13 +19818,13 @@ function saveBackup(root = null, outputFile = BACKUP_FILE) {
       repoRoot
     };
   });
-  (0, import_node_fs3.mkdirSync)(BACKUP_DIR, { recursive: true });
+  (0, import_node_fs4.mkdirSync)(BACKUP_DIR, { recursive: true });
   const backup = {
     created: (/* @__PURE__ */ new Date()).toISOString(),
-    worktreesRoot: root ?? process.env.GWT_WORKTREES_ROOT ?? (0, import_node_path4.join)((0, import_node_os5.homedir)(), "worktrees"),
+    worktreesRoot: root ?? process.env.GWT_WORKTREES_ROOT ?? (0, import_node_path5.join)((0, import_node_os6.homedir)(), "worktrees"),
     entries
   };
-  (0, import_node_fs3.writeFileSync)(outputFile, JSON.stringify(backup, null, 2), "utf8");
+  (0, import_node_fs4.writeFileSync)(outputFile, JSON.stringify(backup, null, 2), "utf8");
   return backup;
 }
 function git(repoRoot, args) {
@@ -19739,10 +19856,10 @@ function gitErrorMessage(err) {
   return lines.find((line) => line.startsWith("fatal:")) ?? lines[0];
 }
 function restoreBackup(backupFile = BACKUP_FILE) {
-  if (!(0, import_node_fs3.existsSync)(backupFile)) {
+  if (!(0, import_node_fs4.existsSync)(backupFile)) {
     throw new Error(`No backup found at ${backupFile}`);
   }
-  const backup = JSON.parse((0, import_node_fs3.readFileSync)(backupFile, "utf8"));
+  const backup = JSON.parse((0, import_node_fs4.readFileSync)(backupFile, "utf8"));
   const log = [];
   const fetchErrors = /* @__PURE__ */ new Map();
   let restored = 0;
@@ -19753,12 +19870,12 @@ function restoreBackup(backupFile = BACKUP_FILE) {
     failed++;
   };
   for (const entry of backup.entries) {
-    if ((0, import_node_fs3.existsSync)(entry.path)) {
+    if ((0, import_node_fs4.existsSync)(entry.path)) {
       log.push({ status: "skipped", entry, reason: "directory already exists" });
       skipped++;
       continue;
     }
-    if (!entry.repoRoot || !(0, import_node_fs3.existsSync)(entry.repoRoot)) {
+    if (!entry.repoRoot || !(0, import_node_fs4.existsSync)(entry.repoRoot)) {
       fail(entry, `repo root not found: ${entry.repoRoot}`);
       continue;
     }
@@ -19795,7 +19912,7 @@ function restoreBackup(backupFile = BACKUP_FILE) {
       args = ["worktree", "add", "--no-track", "-b", entry.branch, entry.path, base];
       source = base;
     }
-    (0, import_node_fs3.mkdirSync)((0, import_node_path4.join)(entry.path, ".."), { recursive: true });
+    (0, import_node_fs4.mkdirSync)((0, import_node_path5.join)(entry.path, ".."), { recursive: true });
     try {
       git(entry.repoRoot, args);
       log.push({ status: "restored", entry, source });
@@ -19812,13 +19929,17 @@ yargs_default(hideBin(process.argv)).scriptName("gwt").option("root", {
   type: "string",
   description: "Root directory containing worktrees (default: ~/worktrees)",
   global: true
+}).option("jira-url", {
+  type: "string",
+  description: "Jira base URL for ticket hyperlinks (e.g. https://bamboohr.atlassian.net). Overrides GWT_JIRA_URL env var and ~/.gwt/config.json.",
+  global: true
 }).command(
   "$0",
   "Interactively browse and manage git worktrees",
   () => {
   },
   (argv) => {
-    runInteractive({ root: argv.root ?? null }).catch((err) => {
+    runInteractive({ root: argv.root ?? null, jiraUrl: argv.jiraUrl ?? null }).catch((err) => {
       console.error(err.message ?? err);
       process.exit(1);
     });

@@ -12,6 +12,11 @@ yargs(hideBin(process.argv))
     description: 'Root directory containing worktrees (default: ~/worktrees)',
     global: true,
   })
+  .option('jira-url', {
+    type: 'string',
+    description: 'Jira base URL for ticket hyperlinks (e.g. https://bamboohr.atlassian.net). Overrides GWT_JIRA_URL env var and ~/.gwt/config.json.',
+    global: true,
+  })
 
   // Default command — interactive picker
   .command(
@@ -19,7 +24,7 @@ yargs(hideBin(process.argv))
     'Interactively browse and manage git worktrees',
     () => {},
     (argv) => {
-      runInteractive({ root: argv.root ?? null }).catch((err) => {
+      runInteractive({ root: argv.root ?? null, jiraUrl: argv.jiraUrl ?? null }).catch((err) => {
         console.error(err.message ?? err);
         process.exit(1);
       });

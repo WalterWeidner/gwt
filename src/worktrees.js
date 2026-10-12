@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join, basename } from 'node:path';
 import { homedir } from 'node:os';
 
@@ -22,6 +22,36 @@ function resolveBranch(worktreePath) {
 }
 
 /**
+ * Resolve the Unix timestamp (seconds) of the most recent commit on this branch.
+ * Returns a Date, or null on error / no commits.
+ */
+function resolveLastCommitAt(worktreePath) {
+  try {
+    const ts = execFileSync(
+      'git',
+      ['-C', worktreePath, 'log', '-1', '--format=%ct'],
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }
+    ).trim();
+    return ts ? new Date(parseInt(ts, 10) * 1000) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolve when the worktree directory was created (filesystem birthtime).
+ * APFS on macOS surfaces accurate birthtimes; older HFS+ does not.
+ * Returns a Date, or null on error.
+ */
+function resolveCreatedAt(worktreePath) {
+  try {
+    return statSync(worktreePath).birthtime;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Check whether a path looks like a git worktree (has .git file or dir).
  */
 function isWorktree(p) {
@@ -38,11 +68,14 @@ function describeWorktree(worktreePath, repo) {
   const branch = resolveBranch(worktreePath);
   const branchDiffers = branch !== name && branch !== 'unknown';
 
+  const lastCommitAt = resolveLastCommitAt(worktreePath);
+  const createdAt = resolveCreatedAt(worktreePath);
+
   const label = repo
     ? `${repo} / ${name}${branchDiffers ? ` (branch: ${branch})` : ''}`
     : `${name}${branchDiffers ? ` (branch: ${branch})` : ''}`;
 
-  return { repo, name, path: worktreePath, branch, branchDiffers, label };
+  return { repo, name, path: worktreePath, branch, branchDiffers, label, lastCommitAt, createdAt };
 }
 
 /**

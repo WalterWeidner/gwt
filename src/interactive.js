@@ -66,9 +66,9 @@ async function runBulkDelete(worktrees) {
 
 /**
  * Main interactive loop.
- * @param {{ root?: string|null }} options
+ * @param {{ root?: string|null, jiraUrl?: string|null }} options
  */
-export async function runInteractive({ root = null } = {}) {
+export async function runInteractive({ root = null, jiraUrl = null } = {}) {
   // eslint-disable-next-line no-constant-condition
   while (true) {
     const worktrees = discoverWorktrees(root);
@@ -83,7 +83,7 @@ export async function runInteractive({ root = null } = {}) {
     // --- Worktree picker ---
     let pickerResult;
     try {
-      pickerResult = await worktreePicker({ worktrees });
+      pickerResult = await worktreePicker({ worktrees, jiraUrl });
     } catch (err) {
       if (err.name === 'ExitPromptError') {
         process.exit(0);
