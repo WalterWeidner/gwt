@@ -19545,9 +19545,11 @@ function reltime(date) {
 }
 function jiraHyperlink(ticketId, jiraUrl) {
   if (!ticketId) return "";
-  if (!jiraUrl) return ticketId;
+  const display = `\u2B21 ${ticketId}`;
+  const styledDisplay = source_default.dim(display);
+  if (!jiraUrl) return styledDisplay;
   const url = `${jiraUrl.replace(/\/$/, "")}/browse/${ticketId}`;
-  return `\x1B]8;;${url}\x07${ticketId}\x1B]8;;\x07`;
+  return `\x1B]8;;${url}\x07${styledDisplay}\x1B]8;;\x07`;
 }
 function parseName(name) {
   const match = name.match(/^([A-Za-z]+-\d+)[_-](.+)$/);
@@ -19561,19 +19563,12 @@ function parseName(name) {
 }
 function renderWorktreeItem(wt, isActive, jiraUrl) {
   const { ticketId, description } = parseName(wt.name);
-  const titleLine = isActive ? `  ${source_default.cyan("\u276F")} ${source_default.cyan.bold(description)}` : `    ${source_default.bold(description)}`;
+  const updated = reltime(wt.lastCommitAt);
+  const dateSuffix = updated ? source_default.dim(`  ${updated}`) : "";
+  const titleLine = isActive ? `  ${source_default.cyan("\u276F")} ${source_default.cyan.bold(description)}${dateSuffix}` : `    ${source_default.bold(description)}${dateSuffix}`;
   const parts = [source_default.dim(`\u2387  ${wt.branch}`)];
   if (ticketId) {
-    const link = jiraHyperlink(ticketId, jiraUrl);
-    parts.push(source_default.dim(link));
-  }
-  const updated = reltime(wt.lastCommitAt);
-  const created = reltime(wt.createdAt);
-  if (updated) parts.push(source_default.dim(updated));
-  if (created && wt.createdAt && wt.lastCommitAt && wt.lastCommitAt - wt.createdAt > 864e5) {
-    parts.push(source_default.dim(`\u2726 ${created}`));
-  } else if (created && (!wt.lastCommitAt || !wt.createdAt)) {
-    parts.push(source_default.dim(`\u2726 ${created}`));
+    parts.push(jiraHyperlink(ticketId, jiraUrl));
   }
   const detailLine = `      ${parts.join(source_default.dim("  \xB7  "))}`;
   return `${titleLine}

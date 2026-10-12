@@ -52,15 +52,22 @@ function reltime(date) {
 // ── Jira hyperlink (OSC 8) ───────────────────────────────────────────────────
 
 /**
- * Wrap a ticket ID in an OSC 8 terminal hyperlink if jiraUrl is provided.
- * Falls back to plain text when jiraUrl is absent.
+ * Render a ticket ID with an icon, optionally as an OSC 8 terminal hyperlink.
+ *
+ * IMPORTANT: chalk styling is embedded INSIDE the OSC 8 boundaries, not wrapped
+ * around the whole sequence.  Wrapping outside (`chalk.dim(osc8string)`) causes
+ * some terminals to misparse the escape sequence, which is why the links appear
+ * as plain text.  Putting the ANSI codes inside works correctly:
+ *   ESC ] 8 ;; URL BEL  <ANSI dim> ⬡ TICKET <ANSI reset>  ESC ] 8 ;; BEL
  */
 function jiraHyperlink(ticketId, jiraUrl) {
   if (!ticketId) return '';
-  if (!jiraUrl) return ticketId;
+  const display = `⬡ ${ticketId}`;
+  const styledDisplay = chalk.dim(display);
+  if (!jiraUrl) return styledDisplay;
   const url = `${jiraUrl.replace(/\/$/, '')}/browse/${ticketId}`;
-  // OSC 8: ESC ] 8 ;; URL BEL  TEXT  ESC ] 8 ;; BEL
-  return `\u001B]8;;${url}\u0007${ticketId}\u001B]8;;\u0007`;
+  // OSC 8: ESC ] 8 ;; URL BEL  styledText  ESC ] 8 ;; BEL
+  return `\u001B]8;;${url}\u0007${styledDisplay}\u001B]8;;\u0007`;
 }
 
 // ── Item formatting ──────────────────────────────────────────────────────────
@@ -84,8 +91,8 @@ function parseName(name) {
 /**
  * Render one worktree item as a multi-line string.
  *
- * Line 1:  (bold) description  — ticket key is NOT shown here
- * Line 2:  ⎇  branch  ·  [FAB-XXXX hyperlink]  ·  updated Xd  ·  ✦ created Yw
+ * Line 1:  (bold) description  ·  dim last-commit age
+ * Line 2:  ⎇  branch  ·  ⬡ FAB-XXXX (OSC 8 hyperlink when jiraUrl set)
  *
  * @param {object} wt         Worktree descriptor from worktrees.js
  * @param {boolean} isActive  Whether this row has focus
@@ -94,32 +101,20 @@ function parseName(name) {
 function renderWorktreeItem(wt, isActive, jiraUrl) {
   const { ticketId, description } = parseName(wt.name);
 
-  const titleLine = isActive
-    ? `  ${chalk.cyan('❯')} ${chalk.cyan.bold(description)}`
-    : `    ${chalk.bold(description)}`;
+  // Date on title line
+  const updated = reltime(wt.lastCommitAt);
+  const dateSuffix = updated ? chalk.dim(`  ${updated}`) : '';
 
-  // Second line parts
+  const titleLine = isActive
+    ? `  ${chalk.cyan('❯')} ${chalk.cyan.bold(description)}${dateSuffix}`
+    : `    ${chalk.bold(description)}${dateSuffix}`;
+
+  // Second line: branch · ticket-link
   const parts = [chalk.dim(`⎇  ${wt.branch}`)];
 
   if (ticketId) {
-    const link = jiraHyperlink(ticketId, jiraUrl);
-    parts.push(chalk.dim(link));
-  }
-
-  const updated = reltime(wt.lastCommitAt);
-  const created = reltime(wt.createdAt);
-
-  if (updated) parts.push(chalk.dim(updated));
-  // Only show created if it meaningfully differs from last commit (more than 1 day older)
-  if (
-    created &&
-    wt.createdAt &&
-    wt.lastCommitAt &&
-    wt.lastCommitAt - wt.createdAt > 86_400_000
-  ) {
-    parts.push(chalk.dim(`✦ ${created}`));
-  } else if (created && (!wt.lastCommitAt || !wt.createdAt)) {
-    parts.push(chalk.dim(`✦ ${created}`));
+    // jiraHyperlink already applies chalk.dim internally — do NOT wrap again
+    parts.push(jiraHyperlink(ticketId, jiraUrl));
   }
 
   const detailLine = `      ${parts.join(chalk.dim('  ·  '))}`;
