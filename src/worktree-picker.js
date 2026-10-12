@@ -62,7 +62,7 @@ function reltime(date) {
  */
 function jiraHyperlink(ticketId, jiraUrl) {
   if (!ticketId) return '';
-  const display = `⬡ ${ticketId}`;
+  const display = ticketId;
   const styledDisplay = chalk.dim(display);
   if (!jiraUrl) return styledDisplay;
   const url = `${jiraUrl.replace(/\/$/, '')}/browse/${ticketId}`;
@@ -110,7 +110,7 @@ function renderWorktreeItem(wt, isActive, jiraUrl) {
     : `    ${chalk.bold(description)}${dateSuffix}`;
 
   // Second line: branch · ticket-link
-  const parts = [chalk.dim(`⎇  ${wt.branch}`)];
+  const parts = [chalk.dim(wt.branch)];
 
   if (ticketId) {
     // jiraHyperlink already applies chalk.dim internally — do NOT wrap again

@@ -19545,7 +19545,7 @@ function reltime(date) {
 }
 function jiraHyperlink(ticketId, jiraUrl) {
   if (!ticketId) return "";
-  const display = `\u2B21 ${ticketId}`;
+  const display = ticketId;
   const styledDisplay = source_default.dim(display);
   if (!jiraUrl) return styledDisplay;
   const url = `${jiraUrl.replace(/\/$/, "")}/browse/${ticketId}`;
@@ -19566,7 +19566,7 @@ function renderWorktreeItem(wt, isActive, jiraUrl) {
   const updated = reltime(wt.lastCommitAt);
   const dateSuffix = updated ? source_default.dim(`  ${updated}`) : "";
   const titleLine = isActive ? `  ${source_default.cyan("\u276F")} ${source_default.cyan.bold(description)}${dateSuffix}` : `    ${source_default.bold(description)}${dateSuffix}`;
-  const parts = [source_default.dim(`\u2387  ${wt.branch}`)];
+  const parts = [source_default.dim(wt.branch)];
   if (ticketId) {
     parts.push(jiraHyperlink(ticketId, jiraUrl));
   }
