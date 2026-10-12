@@ -106,8 +106,8 @@ function renderWorktreeItem(wt, isActive, jiraUrl) {
   const dateSuffix = updated ? chalk.dim(`  ${updated}`) : '';
 
   const titleLine = isActive
-    ? `  ${chalk.cyan('❯')} ${chalk.cyan.bold(description)}${dateSuffix}`
-    : `    ${chalk.bold(description)}${dateSuffix}`;
+    ? `  ${chalk.cyan('❯')} ${chalk.cyan(description)}${dateSuffix}`
+    : `    ${description}${dateSuffix}`;
 
   // Second line: branch · ticket-link
   const parts = [chalk.dim(wt.branch)];
@@ -218,7 +218,7 @@ export const worktreePicker = createPrompt((config, done) => {
     active: activeDisplayIndex === -1 ? 0 : activeDisplayIndex,
     renderItem: ({ item, isActive }) => {
       if (item.type === 'header') {
-        return chalk.dim.bold(`\n  ${item.repo}`);
+        return chalk.bold(`\n  ${item.repo}`);
       }
       return renderWorktreeItem(item.wt, isActive, jiraUrl);
     },

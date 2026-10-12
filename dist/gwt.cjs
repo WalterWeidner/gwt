@@ -19565,7 +19565,7 @@ function renderWorktreeItem(wt, isActive, jiraUrl) {
   const { ticketId, description } = parseName(wt.name);
   const updated = reltime(wt.lastCommitAt);
   const dateSuffix = updated ? source_default.dim(`  ${updated}`) : "";
-  const titleLine = isActive ? `  ${source_default.cyan("\u276F")} ${source_default.cyan.bold(description)}${dateSuffix}` : `    ${source_default.bold(description)}${dateSuffix}`;
+  const titleLine = isActive ? `  ${source_default.cyan("\u276F")} ${source_default.cyan(description)}${dateSuffix}` : `    ${description}${dateSuffix}`;
   const parts = [source_default.dim(wt.branch)];
   if (ticketId) {
     parts.push(jiraHyperlink(ticketId, jiraUrl));
@@ -19644,7 +19644,7 @@ var worktreePicker = createPrompt((config, done) => {
     active: activeDisplayIndex === -1 ? 0 : activeDisplayIndex,
     renderItem: ({ item, isActive }) => {
       if (item.type === "header") {
-        return source_default.dim.bold(`
+        return source_default.bold(`
   ${item.repo}`);
       }
       return renderWorktreeItem(item.wt, isActive, jiraUrl);
